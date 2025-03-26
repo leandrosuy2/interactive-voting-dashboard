@@ -27,6 +27,7 @@ interface CompanyCardProps {
   email: string;
   telcom: string;
   qt_funcionarios: number;
+  linha: number;
   onEdit: () => void;
   onDelete: () => void;
 }
@@ -39,6 +40,7 @@ const CompanyCard: React.FC<CompanyCardProps> = ({
   email,
   telcom,
   qt_funcionarios,
+  linha,
   onEdit,
   onDelete,
 }) => {
@@ -99,6 +101,18 @@ const CompanyCard: React.FC<CompanyCardProps> = ({
         variant: "destructive",
       });
     }
+  };
+
+  const getLineLabel = (value: number): string => {
+    const lines = {
+      0: 'VOTACAO',
+      1: 'TRADICIONAL',
+      2: 'LEVE',
+      3: 'JAPONESA',
+      4: 'GRILL',
+      5: 'GOURMET'
+    };
+    return lines[value as keyof typeof lines] || 'DESCONHECIDA';
   };
 
   return (
@@ -164,6 +178,10 @@ const CompanyCard: React.FC<CompanyCardProps> = ({
           <div className="flex justify-between">
             <span className="text-muted-foreground">Funcionários:</span>
             <span className="font-medium">{qt_funcionarios.toString()}</span>
+          </div>
+          <div className="flex justify-between">
+            <span className="text-muted-foreground">Linha:</span>
+            <span className="font-medium">{getLineLabel(linha)}</span>
           </div>
         </div>
 

@@ -16,6 +16,7 @@ export interface Company {
   estado: string;
   user_add: string;
   user_edt: string;
+  linha: number;
   createdAt: string;
   updatedAt: string;
 }
@@ -46,6 +47,7 @@ export interface CreateCompanyRequest {
   cidade: string;
   estado: string;
   user_add: string;
+  linha: number;
 }
 
 export interface UpdateCompanyRequest {
@@ -63,6 +65,7 @@ export interface UpdateCompanyRequest {
   cidade?: string;
   estado?: string;
   user_edt: string;
+  linha?: number;
 }
 
 export interface CreateCompanyServiceRequest {

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
 import { companies } from '@/services/api';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -10,12 +10,24 @@ import { useToast } from '@/hooks/use-toast';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { Company } from '@/types/company';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 interface AddCompanyDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSuccess: () => void;
   company?: Company;
+}
+
+interface Line {
+  value: number;
+  label: string;
 }
 
 const AddCompanyDialog: React.FC<AddCompanyDialogProps> = ({
@@ -43,6 +55,13 @@ const AddCompanyDialog: React.FC<AddCompanyDialogProps> = ({
     cidade: '',
     estado: '',
     user_edt: user?.username || '',
+    user_add: user?.username || '',
+    linha: 0,
+  });
+
+  const { data: lines } = useQuery({
+    queryKey: ['company-lines'],
+    queryFn: companies.getLines,
   });
 
   useEffect(() => {
@@ -68,6 +87,8 @@ const AddCompanyDialog: React.FC<AddCompanyDialogProps> = ({
         cidade: '',
         estado: '',
         user_edt: user?.username || '',
+        user_add: user?.username || '',
+        linha: 0,
       });
     }
   }, [company, user?.username]);
@@ -92,6 +113,8 @@ const AddCompanyDialog: React.FC<AddCompanyDialogProps> = ({
         cidade: '',
         estado: '',
         user_edt: user?.username || '',
+        user_add: user?.username || '',
+        linha: 0,
       });
       setCurrentStep(0);
     },
@@ -125,6 +148,8 @@ const AddCompanyDialog: React.FC<AddCompanyDialogProps> = ({
         cidade: '',
         estado: '',
         user_edt: user?.username || '',
+        user_add: user?.username || '',
+        linha: 0,
       });
       setCurrentStep(0);
     },
@@ -142,6 +167,7 @@ const AddCompanyDialog: React.FC<AddCompanyDialogProps> = ({
     const dataToSubmit = {
       ...formData,
       qt_funcionarios: Number(formData.qt_funcionarios),
+      user_add: user?.username || '',
     };
 
     if (company) {
@@ -194,6 +220,28 @@ const AddCompanyDialog: React.FC<AddCompanyDialogProps> = ({
               onChange={(e) => setFormData({ ...formData, qt_funcionarios: e.target.value })}
               required
             />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="linha">Linha</Label>
+            <Select
+              value={formData.linha.toString()}
+              onValueChange={(value) => setFormData({ ...formData, linha: Number(value) })}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Selecione a linha" />
+              </SelectTrigger>
+              <SelectContent>
+                {lines?.map((line: Line) => (
+                  <SelectItem 
+                    key={line.value} 
+                    value={line.value.toString()}
+                    disabled={!line.value && line.value !== 0}
+                  >
+                    {line.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
         </div>
       ),

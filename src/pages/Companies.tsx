@@ -167,6 +167,7 @@ const Companies: React.FC = () => {
                     email={company.email}
                     telcom={company.telcom}
                     qt_funcionarios={company.qt_funcionarios}
+                    linha={company.linha}
                     onEdit={() => handleEdit(company)}
                     onDelete={() => handleDelete(company.id)}
                   />

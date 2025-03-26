@@ -137,9 +137,6 @@ const Sidebar: React.FC = () => {
             </Button>
           </div>
         )}
-        <div className="mt-4">
-          <ThemeToggle />
-        </div>
       </SidebarFooter>
     </SidebarComponent>
   );

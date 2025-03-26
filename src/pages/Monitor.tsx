@@ -49,6 +49,8 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { cn } from '@/lib/utils';
+import VoteFloatingBars from '@/components/VoteFloatingBars';
+import VoteStats from '@/components/VoteStats';
 
 interface Vote {
   id_voto: string;
@@ -306,7 +308,11 @@ const Monitor: React.FC = () => {
   };
 
   const handleCompanyChange = (companyId: string) => {
-    navigate(`/monitor/${companyId}`);
+    if (companyId === 'all') {
+      navigate('/monitor');
+    } else {
+      navigate(`/monitor/${companyId}`);
+    }
   };
 
   const getTimeRangeLabel = (range: TimeRange) => {
@@ -376,6 +382,13 @@ const Monitor: React.FC = () => {
     }
   };
 
+  const getRatingColorByValue = (value: number) => {
+    if (value >= 4.5) return 'text-green-500';
+    if (value >= 3.5) return 'text-blue-500';
+    if (value >= 2.5) return 'text-yellow-500';
+    return 'text-red-500';
+  };
+
   const getRatingIcon = (avaliacao: string) => {
     switch (avaliacao) {
       case 'Ótimo':
@@ -439,7 +452,7 @@ const Monitor: React.FC = () => {
 
   const filteredVotes = getFilteredVotes(analytics.recentVotes);
   const votesInRange = filteredVotes.length;
-  const averageInRange = filteredVotes.reduce((acc, vote) => acc + vote.rating, 0) / (votesInRange || 1);
+  const averageInRange = filteredVotes.reduce((acc, vote) => acc + getRatingValue(vote.avaliacao), 0) / (votesInRange || 1);
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
@@ -463,14 +476,14 @@ const Monitor: React.FC = () => {
           </div>
           <div className="flex items-center space-x-4">
             <Select
-              value={selectedCompanyId || ''}
+              value={selectedCompanyId || 'all'}
               onValueChange={handleCompanyChange}
             >
               <SelectTrigger className="w-[200px]">
                 <SelectValue placeholder="Selecione uma empresa" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Todas as Empresas</SelectItem>
+                <SelectItem value="all">Todas as Empresas</SelectItem>
                 {companiesList?.map((company) => (
                   <SelectItem key={company.id} value={company.id}>
                     {company.nome}
@@ -592,74 +605,18 @@ const Monitor: React.FC = () => {
           </Card>
         </div>
         
-        {/* Serviços com alertas */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {Object.entries(analytics.votesByService).map(([service, data]) => {
-            const serviceVotes = getFilteredVotes(data.votes);
-            const serviceAverage = serviceVotes.reduce((acc, vote) => acc + vote.rating, 0) / (serviceVotes.length || 1);
-            const hasAlert = serviceAverage < 3;
-
-            return (
-              <Card 
-                key={service} 
-                className={cn(
-                  "bg-gradient-to-br",
-                  hasAlert 
-                    ? "from-red-500/5 to-red-500/10 border-red-500/20" 
-                    : "from-primary/5 to-primary/10"
-                )}
-              >
-                <CardHeader>
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-2">
-                      <BarChart3 className={cn(
-                        "h-5 w-5",
-                        hasAlert ? "text-red-500" : "text-primary"
-                      )} />
-                      <CardTitle className="text-lg">{service}</CardTitle>
-                    </div>
-                    {hasAlert && (
-                      <Badge variant="destructive" className="animate-pulse">
-                        <Bell className="h-3 w-3 mr-1" />
-                        Atenção
-                      </Badge>
-                    )}
-              </div>
-            </CardHeader>
-            <CardContent>
-                  <div className="space-y-4">
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm text-muted-foreground">
-                        Votos no período
-                      </span>
-                      <span className="font-medium">{serviceVotes.length}</span>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm text-muted-foreground">
-                        Média no período
-                      </span>
-                      <span className={cn(
-                        "font-medium",
-                        getRatingColor(serviceAverage)
-                      )}>
-                        {serviceAverage.toFixed(1)}
-                      </span>
-                    </div>
-                    <Progress
-                      value={(serviceAverage / 5) * 100}
-                      className={cn(
-                        "mt-2",
-                        hasAlert 
-                          ? "bg-red-100 dark:bg-red-900/20" 
-                          : "bg-primary/10"
-                      )}
-                    />
-              </div>
-            </CardContent>
-          </Card>
-            );
-          })}
-        </div>
+        {/* Estatísticas de Votos */}
+        <Card className="mt-8 bg-gradient-to-br from-primary/5 to-primary/10">
+          <CardHeader>
+            <div className="flex items-center space-x-2">
+              <BarChart3 className="h-5 w-5 text-primary" />
+              <CardTitle>Estatísticas de Votos</CardTitle>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <VoteStats votes={filteredVotes} />
+          </CardContent>
+        </Card>
 
         {/* Votos recentes com indicadores */}
         <Card className="mt-8 bg-gradient-to-br from-primary/5 to-primary/10">
@@ -668,38 +625,11 @@ const Monitor: React.FC = () => {
               <Zap className="h-5 w-5 text-primary" />
               <CardTitle>Votos Recentes</CardTitle>
             </div>
-            </CardHeader>
-            <CardContent>
-            <ScrollArea className="h-[300px]">
-              <div className="space-y-4">
-                {filteredVotes.map((vote) => (
-                  <div
-                    key={vote.id_voto}
-                    className={cn(
-                      "flex items-center justify-between p-4 border rounded-lg transition-colors",
-                      getRatingValue(vote.avaliacao) < 3 && "border-red-500/50 bg-red-500/5"
-                    )}
-                  >
-                    <div>
-                      <p className="font-medium">{vote.serviceType.nome}</p>
-                      <p className="text-sm text-muted-foreground">
-                        {format(new Date(vote.momento_voto), "dd 'de' MMMM 'às' HH:mm", {
-                          locale: ptBR,
-                        })}
-                      </p>
-                  </div>
-                    <div className="flex items-center space-x-2">
-                      {getRatingIcon(vote.avaliacao)}
-                      <span className={cn("font-medium", getRatingColor(vote.avaliacao))}>
-                        {vote.avaliacao}
-                      </span>
-                </div>
-                  </div>
-                ))}
-              </div>
-            </ScrollArea>
-            </CardContent>
-          </Card>
+          </CardHeader>
+          <CardContent>
+            <VoteFloatingBars votes={filteredVotes} height={300} />
+          </CardContent>
+        </Card>
       </div>
     </div>
   );

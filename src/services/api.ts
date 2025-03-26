@@ -131,6 +131,16 @@ export const companies = {
     await api.delete(`/companies/${id}`);
   },
 
+  getLines: async (): Promise<{ value: number; label: string }[]> => {
+    const response = await api.get('/companies/lines');
+    return response.data;
+  },
+
+  updateLine: async (id: string, linha: number): Promise<Company> => {
+    const response = await api.patch(`/companies/${id}`, { linha });
+    return response.data;
+  },
+
   getServices: async (id: string): Promise<CompanyService[]> => {
     const response = await api.get(`/companies/${id}/services`);
     return response.data;
@@ -165,7 +175,21 @@ export const votes = {
   getAll: async (): Promise<Vote[]> => {
     try {
       const response = await api.get('/votes');
-      return response.data;
+      const votes = response.data;
+      
+      // Busca os dados das empresas para cada voto
+      const votesWithCompany = await Promise.all(
+        votes.map(async (vote: Vote) => {
+          try {
+            const company = await companies.getById(vote.id_empresa);
+            return { ...vote, company };
+          } catch (error) {
+            return vote;
+          }
+        })
+      );
+      
+      return votesWithCompany;
     } catch (error) {
       if (axios.isAxiosError(error)) {
         throw new Error(error.response?.data?.message || 'Falha ao buscar votos');
