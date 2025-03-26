@@ -1,7 +1,8 @@
+
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { auth } from '../services/api';
-import { toast } from 'sonner'; // Import directly from sonner package, not from our component
+import { toast } from 'sonner'; // Import directly from sonner package
 
 interface User {
   id: string;

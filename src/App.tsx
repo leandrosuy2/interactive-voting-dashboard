@@ -9,6 +9,7 @@ import Index from "./pages/Index";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Dashboard from "./pages/Dashboard";
+import Monitor from "./pages/Monitor";
 import NotFound from "./pages/NotFound";
 
 // Create a client for React Query
@@ -33,6 +34,7 @@ const App = () => (
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
             <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/monitor" element={<Monitor />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AuthProvider>

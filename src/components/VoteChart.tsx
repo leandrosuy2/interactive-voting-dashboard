@@ -1,7 +1,17 @@
 
 import React, { useMemo } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
+import { 
+  BarChart, 
+  Bar, 
+  XAxis, 
+  YAxis, 
+  Tooltip, 
+  ResponsiveContainer, 
+  Cell,
+  CartesianGrid,
+  LabelList 
+} from 'recharts';
 
 interface VoteChartProps {
   data: Array<{
@@ -11,9 +21,15 @@ interface VoteChartProps {
   }>;
   title: string;
   description?: string;
+  height?: number;
 }
 
-const VoteChart: React.FC<VoteChartProps> = ({ data, title, description }) => {
+const VoteChart: React.FC<VoteChartProps> = ({ 
+  data, 
+  title, 
+  description, 
+  height = 300 
+}) => {
   // Sort data by votes in descending order
   const sortedData = useMemo(() => {
     return [...data].sort((a, b) => b.votes - a.votes);
@@ -27,9 +43,18 @@ const VoteChart: React.FC<VoteChartProps> = ({ data, title, description }) => {
 
   // Generate colors based on position (higher votes get more saturated colors)
   const getBarColor = (index: number) => {
-    const baseColor = 'hsl(210, 100%, 50%)';
-    const opacity = Math.max(0.3, 1 - (index * 0.15));
-    return `hsl(210, 100%, ${50 + (index * 5)}%, ${opacity})`;
+    const colors = [
+      '#0088FE', // blue
+      '#00C49F', // green
+      '#FFBB28', // yellow
+      '#FF8042', // orange
+      '#8884D8', // purple
+      '#26A69A', // teal
+      '#EF5350', // red
+      '#AB47BC'  // violet
+    ];
+    
+    return colors[index % colors.length];
   };
 
   return (
@@ -43,14 +68,15 @@ const VoteChart: React.FC<VoteChartProps> = ({ data, title, description }) => {
         )}
       </CardHeader>
       <CardContent className="pl-0">
-        <div className="h-[300px] w-full">
+        <div className="h-[300px] w-full" style={{ height }}>
           {data.length > 0 ? (
             <ResponsiveContainer width="100%" height="100%">
               <BarChart 
                 data={sortedData} 
-                margin={{ top: 10, right: 10, left: 0, bottom: 20 }}
+                margin={{ top: 10, right: 30, left: 0, bottom: 20 }}
                 barGap={8}
               >
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255,255,255,0.1)" />
                 <XAxis 
                   dataKey="name" 
                   axisLine={false}
@@ -71,8 +97,9 @@ const VoteChart: React.FC<VoteChartProps> = ({ data, title, description }) => {
                     border: '1px solid hsl(var(--border))',
                     borderRadius: '0.5rem',
                     boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
+                    padding: '8px 12px'
                   }}
-                  labelStyle={{ color: 'hsl(var(--card-foreground))' }}
+                  labelStyle={{ color: 'hsl(var(--card-foreground))', fontWeight: 'bold', marginBottom: '4px' }}
                 />
                 <Bar 
                   dataKey="votes" 
@@ -83,6 +110,7 @@ const VoteChart: React.FC<VoteChartProps> = ({ data, title, description }) => {
                   {sortedData.map((entry, index) => (
                     <Cell key={`cell-${index}`} fill={getBarColor(index)} />
                   ))}
+                  <LabelList dataKey="votes" position="top" fill="hsl(var(--card-foreground))" fontSize={12} />
                 </Bar>
               </BarChart>
             </ResponsiveContainer>

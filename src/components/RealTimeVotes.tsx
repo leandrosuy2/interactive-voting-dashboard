@@ -23,7 +23,7 @@ const RealTimeVotes: React.FC<RealTimeVotesProps> = ({
   useEffect(() => {
     const fetchVotes = async () => {
       try {
-        // For now, simulate API response with mock data
+        // Simulate API response with mock data
         const mockVotes = await getMockVotes();
         processVotes(mockVotes);
       } catch (error) {
@@ -34,7 +34,7 @@ const RealTimeVotes: React.FC<RealTimeVotesProps> = ({
 
     fetchVotes();
 
-    // Optional: Setup WebSocket or polling for real-time updates
+    // Setup polling for real-time updates
     const interval = setInterval(() => {
       fetchVotes();
     }, 10000); // Update every 10 seconds
@@ -80,6 +80,7 @@ const RealTimeVotes: React.FC<RealTimeVotesProps> = ({
     // Simulate API delay
     await new Promise(resolve => setTimeout(resolve, 800));
     
+    // Demo data with more variety
     return [
       {
         id: "1",
@@ -122,6 +123,20 @@ const RealTimeVotes: React.FC<RealTimeVotesProps> = ({
         service_type: "Conteúdo",
         created_at: new Date(Date.now() - 8 * 60 * 60000).toISOString(), // 8 hours ago
         count: 10
+      },
+      {
+        id: "7",
+        company_name: "Telecomunicações XYZ",
+        service_type: "Internet",
+        created_at: new Date(Date.now() - 10 * 60000).toISOString(), // 10 minutes ago
+        count: 31
+      },
+      {
+        id: "8",
+        company_name: "Restaurante Sabor",
+        service_type: "Atendimento",
+        created_at: new Date(Date.now() - 1.5 * 60 * 60000).toISOString(), // 1.5 hours ago
+        count: 19
       }
     ];
   };

@@ -30,6 +30,11 @@ export interface Company {
   name: string;
   description: string;
   created_at: string;
+  analytics?: {
+    totalVotes: number;
+    votesPerDay: { date: string; count: number }[];
+    satisfaction: number; // percentage
+  };
 }
 
 // Service Type interface
@@ -38,4 +43,14 @@ export interface ServiceType {
   name: string;
   description: string;
   created_at: string;
+}
+
+// Monitor configuration
+export interface MonitorConfig {
+  refreshInterval: number; // in seconds
+  displayMode: 'standard' | 'tv';
+  highlightThreshold: number;
+  showCompanies: boolean;
+  showServices: boolean;
+  showRecentVotes: boolean;
 }

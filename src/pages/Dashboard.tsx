@@ -1,14 +1,28 @@
 
 import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { companies, serviceTypes, votes } from '@/services/api';
 import VoteChart from '@/components/VoteChart';
 import RealTimeVotes from '@/components/RealTimeVotes';
 import ServiceTypeFilter from '@/components/ServiceTypeFilter';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { ArrowUpRight, BarChart, Building, Users, Zap } from 'lucide-react';
+import { 
+  AlertCircle,
+  ArrowUpRight, 
+  BarChart, 
+  Building, 
+  Users, 
+  Zap,
+  LineChart,
+  Activity,
+  PieChart,
+  Monitor as MonitorIcon
+} from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Button } from '@/components/ui/button';
 import Navbar from '@/components/Navbar';
+import { toast } from 'sonner';
 
 interface CompanyVotes {
   name: string;
@@ -30,6 +44,11 @@ const Dashboard: React.FC = () => {
   const [totalServiceTypes, setTotalServiceTypes] = useState<number>(0);
   const [loading, setLoading] = useState<boolean>(true);
   const [filteredServiceIds, setFilteredServiceIds] = useState<string[]>([]);
+  const [votesData, setVotesData] = useState<{today: number, week: number, month: number}>({
+    today: 0,
+    week: 0,
+    month: 0
+  });
   
   const fetchData = async () => {
     try {
@@ -80,10 +99,55 @@ const Dashboard: React.FC = () => {
         id: service.id
       }));
       
+      // Calculate time-based metrics
+      const now = new Date();
+      const today = new Date(now.setHours(0, 0, 0, 0));
+      
+      const weekAgo = new Date();
+      weekAgo.setDate(weekAgo.getDate() - 7);
+      
+      const monthAgo = new Date();
+      monthAgo.setMonth(monthAgo.getMonth() - 1);
+      
+      const votesToday = allVotes.filter((vote: any) => new Date(vote.created_at) >= today).length;
+      const votesThisWeek = allVotes.filter((vote: any) => new Date(vote.created_at) >= weekAgo).length;
+      const votesThisMonth = allVotes.filter((vote: any) => new Date(vote.created_at) >= monthAgo).length;
+      
+      setVotesData({
+        today: votesToday,
+        week: votesThisWeek,
+        month: votesThisMonth
+      });
+      
       setCompanyVotes(processedCompanyVotes);
       setServiceTypeVotes(processedServiceVotes);
+      
+      // Show notifications for recent votes
+      if (!loading && allVotes.length > 0) {
+        const latestVote = allVotes[0];
+        const voteTime = new Date(latestVote.created_at);
+        const fiveMinutesAgo = new Date();
+        fiveMinutesAgo.setMinutes(fiveMinutesAgo.getMinutes() - 5);
+        
+        if (voteTime > fiveMinutesAgo) {
+          const company = allCompanies.find((c: any) => c.id === latestVote.id_empresa);
+          const service = allServiceTypes.find((s: any) => s.id === latestVote.id_tipo_servico);
+          
+          if (company && service) {
+            toast.info(
+              `Novo voto para ${company.name} - ${service.name}`, 
+              { 
+                icon: <Zap className="h-4 w-4" />,
+                duration: 4000
+              }
+            );
+          }
+        }
+      }
+      
     } catch (error) {
       console.error('Error fetching dashboard data:', error);
+      toast.error('Erro ao carregar dados do dashboard');
     } finally {
       setLoading(false);
     }
@@ -118,11 +182,19 @@ const Dashboard: React.FC = () => {
               </p>
             </div>
             
-            <ServiceTypeFilter onFilterChange={handleFilterChange} />
+            <div className="flex gap-3">
+              <ServiceTypeFilter onFilterChange={handleFilterChange} />
+              <Link to="/monitor">
+                <Button variant="outline" className="gap-2">
+                  <MonitorIcon size={16} />
+                  Modo Monitor
+                </Button>
+              </Link>
+            </div>
           </div>
           
           {/* Stats Cards */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
             <Card className="glass-card relative overflow-hidden">
               <div className="absolute right-4 top-4 opacity-20">
                 <Zap className="h-12 w-12 text-primary" />
@@ -145,7 +217,36 @@ const Dashboard: React.FC = () => {
             
             <Card className="glass-card relative overflow-hidden">
               <div className="absolute right-4 top-4 opacity-20">
-                <Building className="h-12 w-12 text-primary" />
+                <Activity className="h-12 w-12 text-indigo-500" />
+              </div>
+              <CardHeader className="pb-2">
+                <CardDescription>Atividade Recente</CardDescription>
+                <div className="flex flex-col gap-1">
+                  {loading ? (
+                    <Skeleton className="h-8 w-24" />
+                  ) : (
+                    <>
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs text-muted-foreground">Hoje</span>
+                        <span className="text-sm font-medium">{votesData.today}</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs text-muted-foreground">Esta semana</span>
+                        <span className="text-sm font-medium">{votesData.week}</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs text-muted-foreground">Este mês</span>
+                        <span className="text-sm font-medium">{votesData.month}</span>
+                      </div>
+                    </>
+                  )}
+                </div>
+              </CardHeader>
+            </Card>
+            
+            <Card className="glass-card relative overflow-hidden">
+              <div className="absolute right-4 top-4 opacity-20">
+                <Building className="h-12 w-12 text-blue-500" />
               </div>
               <CardHeader className="pb-2">
                 <CardDescription>Empresas</CardDescription>
@@ -161,7 +262,7 @@ const Dashboard: React.FC = () => {
             
             <Card className="glass-card relative overflow-hidden">
               <div className="absolute right-4 top-4 opacity-20">
-                <BarChart className="h-12 w-12 text-primary" />
+                <BarChart className="h-12 w-12 text-green-500" />
               </div>
               <CardHeader className="pb-2">
                 <CardDescription>Tipos de Serviço</CardDescription>
@@ -176,11 +277,27 @@ const Dashboard: React.FC = () => {
             </Card>
           </div>
           
+          {/* Status Card */}
+          <Card className="glass-card p-4 border-l-4 border-l-yellow-500 bg-yellow-500/10">
+            <div className="flex items-start gap-4">
+              <AlertCircle className="h-5 w-5 text-yellow-500 mt-0.5" />
+              <div>
+                <h3 className="font-medium">Modo de demonstração</h3>
+                <p className="text-sm text-muted-foreground">
+                  Os dados exibidos são simulados para fins de demonstração. Para dados reais, configure a API no backend.
+                </p>
+              </div>
+            </div>
+          </Card>
+          
           {/* Charts & Real-time Data */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <Tabs defaultValue="companies" className="w-full">
               <div className="flex items-center justify-between mb-4">
-                <h2 className="text-xl font-semibold">Análise de Votos</h2>
+                <h2 className="text-xl font-semibold flex items-center gap-2">
+                  <LineChart className="h-5 w-5 text-primary" />
+                  Análise de Votos
+                </h2>
                 <TabsList>
                   <TabsTrigger value="companies" className="text-xs">Empresas</TabsTrigger>
                   <TabsTrigger value="services" className="text-xs">Serviços</TabsTrigger>
@@ -237,7 +354,10 @@ const Dashboard: React.FC = () => {
             </Tabs>
             
             <div className="flex flex-col">
-              <h2 className="text-xl font-semibold mb-4">Votos Recentes</h2>
+              <div className="flex items-center gap-2 mb-4">
+                <PieChart className="h-5 w-5 text-primary" />
+                <h2 className="text-xl font-semibold">Votos Recentes</h2>
+              </div>
               <RealTimeVotes />
             </div>
           </div>
