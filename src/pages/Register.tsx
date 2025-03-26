@@ -47,7 +47,13 @@ const Register: React.FC = () => {
       setError(null);
       
       const { confirmPassword, ...registerData } = data;
-      await register(registerData);
+      // Explicitly type the registerData to match the expected type
+      await register({
+        username: registerData.username,
+        password: registerData.password,
+        email: registerData.email,
+        name: registerData.name
+      });
     } catch (err) {
       console.error('Registration error:', err);
       setError('Falha ao registrar. O usuário ou email já pode estar em uso.');

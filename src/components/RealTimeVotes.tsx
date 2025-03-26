@@ -1,169 +1,162 @@
 
 import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { votes, companies, serviceTypes } from '@/services/api';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import VoteCard from './VoteCard';
-import { CircleAlert } from 'lucide-react';
+import { ProcessedVote } from '@/types/vote';
+import { Vote } from '@/types/api';
 
-interface Vote {
-  id: string;
-  id_empresa: string;
-  id_tipo_servico: string;
-  created_at: string;
+interface RealTimeVotesProps {
+  title?: string;
+  maxItems?: number;
+  highlightRecent?: boolean;
 }
 
-interface ProcessedVote {
-  id: string;
-  companyName: string;
-  serviceName: string;
-  timestamp: string;
-  count: number;
-  isRecent: boolean;
-}
-
-const RealTimeVotes: React.FC = () => {
-  const [processedVotes, setProcessedVotes] = useState<ProcessedVote[]>([]);
+const RealTimeVotes: React.FC<RealTimeVotesProps> = ({
+  title = "Votos Recentes",
+  maxItems = 6,
+  highlightRecent = true
+}) => {
+  const [votes, setVotes] = useState<ProcessedVote[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
 
-  // Function to process votes with company and service type names
-  const processVotesData = async () => {
-    try {
-      setLoading(true);
-      
-      // Get all votes, companies, and service types
-      const [votesResponse, companiesResponse, serviceTypesResponse] = await Promise.all([
-        votes.getAll(),
-        companies.getAll(),
-        serviceTypes.getAll()
-      ]);
-
-      // Create maps for quick lookup
-      const companiesMap = new Map(companiesResponse.map((company: any) => [company.id, company.name]));
-      const serviceTypesMap = new Map(serviceTypesResponse.map((service: any) => [service.id, service.name]));
-      
-      // Group votes by company and service type
-      const voteGroups = votesResponse.reduce((acc: any, vote: Vote) => {
-        const key = `${vote.id_empresa}_${vote.id_tipo_servico}`;
-        if (!acc[key]) {
-          acc[key] = {
-            id: vote.id,
-            id_empresa: vote.id_empresa,
-            id_tipo_servico: vote.id_tipo_servico,
-            count: 0,
-            timestamps: []
-          };
-        }
-        acc[key].count += 1;
-        acc[key].timestamps.push(vote.created_at);
-        return acc;
-      }, {});
-      
-      // Convert to array and add company and service names
-      const now = new Date();
-      const processed = Object.values(voteGroups).map((group: any) => {
-        // Sort timestamps to get the most recent one
-        const sortedTimestamps = [...group.timestamps].sort((a, b) => 
-          new Date(b).getTime() - new Date(a).getTime()
-        );
-        
-        // Check if the vote is recent (less than 5 minutes ago)
-        const mostRecentTime = new Date(sortedTimestamps[0]);
-        const isRecent = (now.getTime() - mostRecentTime.getTime()) < 5 * 60 * 1000;
-        
-        return {
-          id: group.id,
-          companyName: companiesMap.get(group.id_empresa) || 'Empresa Desconhecida',
-          serviceName: serviceTypesMap.get(group.id_tipo_servico) || 'Serviço Desconhecido',
-          timestamp: sortedTimestamps[0],
-          count: group.count,
-          isRecent
-        };
-      });
-      
-      // Sort by count and recent status
-      const sortedVotes = processed.sort((a, b) => {
-        if (a.isRecent && !b.isRecent) return -1;
-        if (!a.isRecent && b.isRecent) return 1;
-        return b.count - a.count;
-      });
-      
-      setProcessedVotes(sortedVotes);
-      setError(null);
-    } catch (error) {
-      console.error('Error fetching real-time votes:', error);
-      setError('Não foi possível carregar os votos.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Initial data fetch
+  // Fetch votes data
   useEffect(() => {
-    processVotesData();
-    
-    // Poll for new votes every 10 seconds
-    const intervalId = setInterval(processVotesData, 10000);
-    
-    return () => clearInterval(intervalId);
+    const fetchVotes = async () => {
+      try {
+        // For now, simulate API response with mock data
+        const mockVotes = await getMockVotes();
+        processVotes(mockVotes);
+      } catch (error) {
+        console.error("Error fetching votes:", error);
+        setLoading(false);
+      }
+    };
+
+    fetchVotes();
+
+    // Optional: Setup WebSocket or polling for real-time updates
+    const interval = setInterval(() => {
+      fetchVotes();
+    }, 10000); // Update every 10 seconds
+
+    return () => clearInterval(interval);
   }, []);
 
-  if (loading && processedVotes.length === 0) {
-    return (
-      <Card className="glass-card h-full">
-        <CardHeader>
-          <CardTitle>Carregando votos em tempo real...</CardTitle>
-          <CardDescription>Aguarde enquanto buscamos os dados mais recentes</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="h-60 flex items-center justify-center">
-            <div className="animate-pulse flex flex-col items-center">
-              <div className="w-12 h-12 bg-primary/20 rounded-full mb-4"></div>
-              <div className="h-2 w-24 bg-muted rounded"></div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-    );
-  }
+  // Process votes data
+  const processVotes = (rawVotes: Vote[]) => {
+    // Process and transform raw vote data
+    let processedVotes: ProcessedVote[] = rawVotes.map(vote => ({
+      id: vote.id,
+      companyName: vote.company_name,
+      serviceName: vote.service_type,
+      timestamp: vote.created_at,
+      count: vote.count,
+      isRecent: highlightRecent && isRecentVote(vote.created_at)
+    }));
 
-  if (error) {
-    return (
-      <Card className="glass-card h-full border-destructive/50">
-        <CardHeader>
-          <CardTitle className="text-destructive flex items-center gap-2">
-            <CircleAlert className="h-5 w-5" />
-            Erro ao carregar votos
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p className="text-muted-foreground">{error}</p>
-        </CardContent>
-        <CardFooter>
-          <button 
-            onClick={processVotesData}
-            className="text-sm text-primary underline"
-          >
-            Tentar novamente
-          </button>
-        </CardFooter>
-      </Card>
+    // Sort by timestamp (most recent first)
+    processedVotes.sort((a, b) => 
+      new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
     );
-  }
+
+    // Limit to maxItems
+    if (processedVotes.length > maxItems) {
+      processedVotes = processedVotes.slice(0, maxItems);
+    }
+
+    setVotes(processedVotes);
+    setLoading(false);
+  };
+
+  // Check if a vote is recent (within the last hour)
+  const isRecentVote = (timestamp: string): boolean => {
+    const voteTime = new Date(timestamp).getTime();
+    const oneHourAgo = new Date().getTime() - (60 * 60 * 1000);
+    return voteTime > oneHourAgo;
+  };
+
+  // Mock data function - replace with actual API call later
+  const getMockVotes = async (): Promise<Vote[]> => {
+    // Simulate API delay
+    await new Promise(resolve => setTimeout(resolve, 800));
+    
+    return [
+      {
+        id: "1",
+        company_name: "Empresa ABC",
+        service_type: "Atendimento ao Cliente",
+        created_at: new Date(Date.now() - 20 * 60000).toISOString(), // 20 minutes ago
+        count: 15
+      },
+      {
+        id: "2",
+        company_name: "Tech Solutions",
+        service_type: "Suporte Técnico",
+        created_at: new Date(Date.now() - 45 * 60000).toISOString(), // 45 minutes ago
+        count: 8
+      },
+      {
+        id: "3",
+        company_name: "Lojas Star",
+        service_type: "Entrega",
+        created_at: new Date(Date.now() - 2 * 60 * 60000).toISOString(), // 2 hours ago
+        count: 22
+      },
+      {
+        id: "4",
+        company_name: "Mercado Express",
+        service_type: "Qualidade do Produto",
+        created_at: new Date(Date.now() - 3 * 60 * 60000).toISOString(), // 3 hours ago
+        count: 5
+      },
+      {
+        id: "5",
+        company_name: "Banco Seguro",
+        service_type: "Aplicativo Mobile",
+        created_at: new Date(Date.now() - 5 * 60 * 60000).toISOString(), // 5 hours ago
+        count: 17
+      },
+      {
+        id: "6",
+        company_name: "Streaming Plus",
+        service_type: "Conteúdo",
+        created_at: new Date(Date.now() - 8 * 60 * 60000).toISOString(), // 8 hours ago
+        count: 10
+      }
+    ];
+  };
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-      {processedVotes.slice(0, 6).map((vote) => (
-        <VoteCard 
-          key={vote.id}
-          companyName={vote.companyName}
-          serviceName={vote.serviceName}
-          timestamp={vote.timestamp}
-          count={vote.count}
-          isRecent={vote.isRecent}
-        />
-      ))}
-    </div>
+    <Card className="shadow-md h-full">
+      <CardHeader className="pb-2">
+        <CardTitle className="text-xl">{title}</CardTitle>
+        <CardDescription>
+          Últimos votos registrados no sistema
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        {loading ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {Array(maxItems).fill(0).map((_, index) => (
+              <div key={index} className="h-32 rounded-lg bg-gray-200 animate-pulse"></div>
+            ))}
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {votes.map(vote => (
+              <VoteCard 
+                key={vote.id}
+                companyName={vote.companyName}
+                serviceName={vote.serviceName}
+                timestamp={vote.timestamp}
+                count={vote.count}
+                isRecent={vote.isRecent}
+              />
+            ))}
+          </div>
+        )}
+      </CardContent>
+    </Card>
   );
 };
 
