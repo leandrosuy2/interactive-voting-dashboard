@@ -4,7 +4,6 @@ import { Link } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useForm } from 'react-hook-form';
@@ -12,6 +11,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Activity, AlertCircle, LogIn } from 'lucide-react';
+import ThemeToggle from '@/components/ThemeToggle';
 
 const loginSchema = z.object({
   username: z.string().min(1, 'Usuário é obrigatório'),
@@ -47,13 +47,17 @@ const Login: React.FC = () => {
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center p-4 bg-background">
+      <div className="absolute top-4 right-4">
+        <ThemeToggle />
+      </div>
+      
       <div className="w-full max-w-md animate-fade-in">
         <div className="mb-8 text-center">
           <div className="flex items-center justify-center mb-4">
             <Activity className="h-8 w-8 text-primary" />
           </div>
-          <h1 className="text-2xl font-bold tracking-tight">VoteTrack</h1>
-          <p className="text-sm text-muted-foreground mt-1">Faça login para gerenciar e acompanhar votos</p>
+          <h1 className="text-2xl font-bold tracking-tight">Satisfaction</h1>
+          <p className="text-sm text-muted-foreground mt-1">Faça login para gerenciar e acompanhar feedbacks</p>
         </div>
 
         <Card className="glass-card">

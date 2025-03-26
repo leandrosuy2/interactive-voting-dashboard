@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/context/AuthContext';
 import { ArrowRight, BarChart3, Check, Activity } from 'lucide-react';
+import ThemeToggle from '@/components/ThemeToggle';
 
 const Index = () => {
   const { isAuthenticated } = useAuth();
@@ -14,10 +15,11 @@ const Index = () => {
         <div className="container mx-auto flex justify-between items-center">
           <div className="flex items-center gap-2">
             <Activity className="h-6 w-6 text-primary" />
-            <span className="text-xl font-semibold">VoteTrack</span>
+            <span className="text-xl font-semibold">Satisfaction</span>
           </div>
           
           <div className="flex items-center gap-4">
+            <ThemeToggle />
             {isAuthenticated ? (
               <Link to="/dashboard">
                 <Button variant="default">
@@ -44,10 +46,10 @@ const Index = () => {
           <div className="container mx-auto max-w-5xl animate-fade-in">
             <div className="text-center mb-12">
               <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight mb-6">
-                Sistema de <span className="text-primary">Votação</span> Interativo
+                Sistema de <span className="text-primary">Feedback</span> Interativo
               </h1>
               <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-                Acompanhe votos em tempo real, visualize estatísticas e gerencie empresas em uma interface elegante e intuitiva.
+                Acompanhe a satisfação de clientes em tempo real, visualize estatísticas e gerencie feedback de empresas em uma interface elegante e intuitiva.
               </p>
               
               <div className="mt-10 flex flex-col sm:flex-row gap-4 justify-center">
@@ -81,9 +83,9 @@ const Index = () => {
                 <div className="bg-primary/10 p-3 rounded-full w-12 h-12 flex items-center justify-center mb-4">
                   <BarChart3 className="text-primary h-6 w-6" />
                 </div>
-                <h3 className="text-xl font-semibold mb-2">Votação em Tempo Real</h3>
+                <h3 className="text-xl font-semibold mb-2">Feedback em Tempo Real</h3>
                 <p className="text-muted-foreground">
-                  Visualize os resultados das votações instantaneamente à medida que novos votos são registrados.
+                  Visualize os resultados das avaliações instantaneamente à medida que novos feedbacks são registrados.
                 </p>
               </div>
               
@@ -93,7 +95,7 @@ const Index = () => {
                 </div>
                 <h3 className="text-xl font-semibold mb-2">Análise Detalhada</h3>
                 <p className="text-muted-foreground">
-                  Acesse gráficos interativos e relatórios detalhados para entender melhor o desempenho das empresas.
+                  Acesse gráficos interativos e relatórios detalhados para entender melhor a satisfação dos clientes.
                 </p>
               </div>
               
@@ -103,7 +105,7 @@ const Index = () => {
                 </div>
                 <h3 className="text-xl font-semibold mb-2">Gerenciamento Completo</h3>
                 <p className="text-muted-foreground">
-                  Cadastre empresas, tipos de serviços e gerencie todo o sistema de votação em um só lugar.
+                  Cadastre empresas, tipos de serviços e gerencie todo o sistema de avaliação em um só lugar.
                 </p>
               </div>
             </div>
@@ -115,7 +117,7 @@ const Index = () => {
             <div className="text-center mb-12">
               <h2 className="text-3xl font-bold mb-4">Como Funciona</h2>
               <p className="text-muted-foreground max-w-2xl mx-auto">
-                Nosso sistema de votação interativo é simples de usar e oferece resultados imediatos.
+                Nosso sistema de avaliação interativo é simples de usar e oferece resultados imediatos.
               </p>
             </div>
             
@@ -136,7 +138,7 @@ const Index = () => {
                 </div>
                 <h3 className="text-lg font-semibold mb-2">Cadastro</h3>
                 <p className="text-muted-foreground">
-                  Adicione empresas e tipos de serviços que serão avaliados pelos usuários.
+                  Adicione empresas e tipos de serviços que serão avaliados pelos clientes.
                 </p>
               </div>
               
@@ -146,7 +148,7 @@ const Index = () => {
                 </div>
                 <h3 className="text-lg font-semibold mb-2">Visualização</h3>
                 <p className="text-muted-foreground">
-                  Acompanhe os votos em tempo real e obtenha insights valiosos sobre as preferências dos usuários.
+                  Acompanhe os feedbacks em tempo real e obtenha insights valiosos sobre a satisfação dos clientes.
                 </p>
               </div>
             </div>
@@ -165,7 +167,7 @@ const Index = () => {
       <footer className="border-t py-8 px-4">
         <div className="container mx-auto text-center">
           <p className="text-muted-foreground text-sm">
-            © {new Date().getFullYear()} VoteTrack. Todos os direitos reservados.
+            © {new Date().getFullYear()} Satisfaction. Todos os direitos reservados.
           </p>
         </div>
       </footer>

@@ -4,6 +4,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/button';
 import { LogOut, Activity, BarChart3 } from 'lucide-react';
+import ThemeToggle from './ThemeToggle';
 
 const Navbar: React.FC = () => {
   const { isAuthenticated, logout, user } = useAuth();
@@ -23,7 +24,7 @@ const Navbar: React.FC = () => {
               className="flex items-center gap-2 transition-transform hover:scale-105 duration-300"
             >
               <Activity className="h-6 w-6 text-primary" />
-              <span className="text-xl font-semibold text-foreground">VoteTrack</span>
+              <span className="text-xl font-semibold text-foreground">Satisfaction</span>
             </Link>
           </div>
           
@@ -70,6 +71,7 @@ const Navbar: React.FC = () => {
                   )}
                 </Link>
                 <div className="ml-4 flex items-center gap-2">
+                  <ThemeToggle />
                   <span className="text-sm font-medium text-foreground/80">
                     {user?.name}
                   </span>
@@ -85,6 +87,7 @@ const Navbar: React.FC = () => {
               </>
             ) : (
               <>
+                <ThemeToggle />
                 <Link 
                   to="/login" 
                   className={`relative px-3 py-2 rounded-md text-sm font-medium transition-colors ${
@@ -112,6 +115,7 @@ const Navbar: React.FC = () => {
           <div className="md:hidden flex items-center">
             {isAuthenticated ? (
               <div className="flex items-center gap-4">
+                <ThemeToggle />
                 <Link to="/dashboard">
                   <BarChart3 className="h-6 w-6 text-foreground/80 hover:text-primary transition-colors" />
                 </Link>
@@ -125,12 +129,15 @@ const Navbar: React.FC = () => {
                 </Button>
               </div>
             ) : (
-              <Link 
-                to="/login" 
-                className="px-3 py-2 rounded-md text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
-              >
-                Login
-              </Link>
+              <div className="flex items-center gap-2">
+                <ThemeToggle />
+                <Link 
+                  to="/login" 
+                  className="px-3 py-2 rounded-md text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
+                >
+                  Login
+                </Link>
+              </div>
             )}
           </div>
         </div>
