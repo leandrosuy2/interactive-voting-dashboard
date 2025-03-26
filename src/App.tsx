@@ -11,6 +11,8 @@ import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Dashboard from "./pages/Dashboard";
 import Monitor from "./pages/Monitor";
+import Companies from "./pages/Companies";
+import ServiceTypes from "./pages/ServiceTypes";
 import NotFound from "./pages/NotFound";
 
 // Create a client for React Query
@@ -37,6 +39,8 @@ const App = () => (
               <Route path="/register" element={<Register />} />
               <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/monitor" element={<Monitor />} />
+              <Route path="/companies" element={<Companies />} />
+              <Route path="/service-types" element={<ServiceTypes />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </AuthProvider>

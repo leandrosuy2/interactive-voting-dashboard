@@ -3,7 +3,7 @@ import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/button';
-import { LogOut, Activity, BarChart3 } from 'lucide-react';
+import { LogOut, Activity, BarChart3, Building, LayoutList } from 'lucide-react';
 import ThemeToggle from './ThemeToggle';
 
 const Navbar: React.FC = () => {
@@ -118,6 +118,12 @@ const Navbar: React.FC = () => {
                 <ThemeToggle />
                 <Link to="/dashboard">
                   <BarChart3 className="h-6 w-6 text-foreground/80 hover:text-primary transition-colors" />
+                </Link>
+                <Link to="/companies">
+                  <Building className="h-6 w-6 text-foreground/80 hover:text-primary transition-colors" />
+                </Link>
+                <Link to="/service-types">
+                  <LayoutList className="h-6 w-6 text-foreground/80 hover:text-primary transition-colors" />
                 </Link>
                 <Button 
                   variant="ghost" 
