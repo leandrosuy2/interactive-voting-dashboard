@@ -1,3 +1,39 @@
+export interface Vote {
+  id_voto: string;
+  id_empresa: string;
+  id_tipo_servico: string;
+  avaliacao: string;
+  comentario: string;
+  status: boolean;
+  momento_voto: string;
+  serviceType: {
+    id_tipo_servico: string;
+    nome: string;
+  };
+}
+
+export interface VoteAnalytics {
+  totalVotes: number;
+  avaliacoesPorTipo: {
+    [key: string]: number;
+  };
+  percentuaisPorTipo: {
+    [key: string]: number;
+  };
+  votesByService: {
+    [key: string]: {
+      total: number;
+      avaliacoes: {
+        [key: string]: number;
+      };
+      percentuais: {
+        [key: string]: number;
+      };
+      votes: Vote[];
+    };
+  };
+  recentVotes: Vote[];
+}
 
 export interface ProcessedVote {
   id: string;
@@ -6,17 +42,6 @@ export interface ProcessedVote {
   timestamp: string;
   count: number;
   isRecent: boolean;
-}
-
-export interface VoteAnalytics {
-  totalVotes: number;
-  votesToday: number;
-  votesThisWeek: number;
-  averageVotesPerDay: number;
-  topCompanies: { name: string; votes: number }[];
-  topServices: { name: string; votes: number }[];
-  votesByHour: { hour: number; count: number }[];
-  votesByDay: { day: string; count: number }[];
 }
 
 export interface CompanyVoteAnalytics {

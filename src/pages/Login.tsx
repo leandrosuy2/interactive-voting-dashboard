@@ -1,150 +1,124 @@
-
-import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
-import { useAuth } from '@/context/AuthContext';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Alert, AlertDescription } from '@/components/ui/alert';
+import React from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import { Activity, AlertCircle, LogIn } from 'lucide-react';
-import ThemeToggle from '@/components/ThemeToggle';
+import * as z from 'zod';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '@/context/AuthContext';
 
-const loginSchema = z.object({
+const formSchema = z.object({
   username: z.string().min(1, 'Usuário é obrigatório'),
   password: z.string().min(1, 'Senha é obrigatória'),
 });
 
-type LoginFormValues = z.infer<typeof loginSchema>;
-
 const Login: React.FC = () => {
+  const navigate = useNavigate();
   const { login } = useAuth();
-  const [error, setError] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
-
-  const form = useForm<LoginFormValues>({
-    resolver: zodResolver(loginSchema),
-    defaultValues: {
-      username: '',
-      password: '',
-    },
+  const {
+    register,
+    handleSubmit,
+    formState: { errors, isSubmitting },
+    setError,
+  } = useForm({
+    resolver: zodResolver(formSchema),
   });
 
-  const onSubmit = async (data: LoginFormValues) => {
+  const onSubmit = async (data: { username: string; password: string }) => {
     try {
-      setIsLoading(true);
-      setError(null);
       await login(data.username, data.password);
-    } catch (err) {
-      setError('Credenciais inválidas. Por favor, tente novamente.');
-    } finally {
-      setIsLoading(false);
+    } catch (error) {
+      setError('root', {
+        message: 'Usuário ou senha inválidos',
+      });
     }
   };
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center p-4 bg-background">
-      <div className="absolute top-4 right-4">
-        <ThemeToggle />
-      </div>
-      
-      <div className="w-full max-w-md animate-fade-in">
-        <div className="mb-8 text-center">
-          <div className="flex items-center justify-center mb-4">
-            <Activity className="h-8 w-8 text-primary" />
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-indigo-100 via-white to-purple-100">
+      <div className="max-w-md w-full mx-4">
+        <div className="bg-white rounded-2xl shadow-xl p-8">
+          <div className="text-center mb-8">
+            <h2 className="text-3xl font-bold text-gray-900 mb-2">Bem-vindo de Volta</h2>
+            <p className="text-gray-600">Entre com sua conta</p>
           </div>
-          <h1 className="text-2xl font-bold tracking-tight">Satisfaction</h1>
-          <p className="text-sm text-muted-foreground mt-1">Faça login para gerenciar e acompanhar feedbacks</p>
-        </div>
 
-        <Card className="glass-card">
-          <CardHeader>
-            <CardTitle>Login</CardTitle>
-            <CardDescription>
-              Entre com suas credenciais para acessar o sistema
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            {error && (
-              <Alert variant="destructive" className="mb-4">
-                <AlertCircle className="h-4 w-4" />
-                <AlertDescription>{error}</AlertDescription>
-              </Alert>
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+            <div className="space-y-4">
+              <div>
+                <label htmlFor="username" className="block text-sm font-medium text-gray-700 mb-1">
+                  Nome de Usuário
+                </label>
+                <input
+                  {...register('username')}
+                  type="text"
+                  className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition duration-200"
+                  placeholder="Digite seu nome de usuário"
+                />
+                {errors.username && (
+                  <p className="mt-1 text-sm text-red-600">{errors.username.message}</p>
+                )}
+              </div>
+
+              <div>
+                <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
+                  Senha
+                </label>
+                <input
+                  {...register('password')}
+                  type="password"
+                  className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition duration-200"
+                  placeholder="Digite sua senha"
+                />
+                {errors.password && (
+                  <p className="mt-1 text-sm text-red-600">{errors.password.message}</p>
+                )}
+              </div>
+            </div>
+
+            {errors.root && (
+              <p className="text-sm text-red-600">{errors.root.message}</p>
             )}
 
-            <Form {...form}>
-              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-                <FormField
-                  control={form.control}
-                  name="username"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Usuário</FormLabel>
-                      <FormControl>
-                        <Input 
-                          {...field} 
-                          placeholder="Seu nome de usuário" 
-                          disabled={isLoading}
-                          className="bg-background/60"
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
+            <div className="flex items-center justify-between">
+              <div className="flex items-center">
+                <input
+                  id="remember-me"
+                  name="remember-me"
+                  type="checkbox"
+                  className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
                 />
+                <label htmlFor="remember-me" className="ml-2 block text-sm text-gray-900">
+                  Lembrar-me
+                </label>
+              </div>
 
-                <FormField
-                  control={form.control}
-                  name="password"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Senha</FormLabel>
-                      <FormControl>
-                        <Input 
-                          {...field} 
-                          type="password" 
-                          placeholder="Sua senha" 
-                          disabled={isLoading}
-                          className="bg-background/60"
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <Button 
-                  type="submit" 
-                  className="w-full mt-4" 
-                  disabled={isLoading}
-                >
-                  {isLoading ? (
-                    <div className="flex items-center gap-2">
-                      <div className="h-4 w-4 rounded-full border-2 border-primary-foreground border-t-transparent animate-spin"></div>
-                      <span>Entrando...</span>
-                    </div>
-                  ) : (
-                    <div className="flex items-center gap-2">
-                      <LogIn className="h-4 w-4" />
-                      <span>Entrar</span>
-                    </div>
-                  )}
-                </Button>
-              </form>
-            </Form>
-          </CardContent>
-          <CardFooter className="flex justify-center border-t pt-4">
-            <div className="text-sm text-muted-foreground">
-              Não tem uma conta?{' '}
-              <Link to="/register" className="text-primary font-medium hover:underline">
-                Registre-se
-              </Link>
+              <div className="text-sm">
+                <a href="#" className="font-medium text-indigo-600 hover:text-indigo-500">
+                  Esqueceu sua senha?
+                </a>
+              </div>
             </div>
-          </CardFooter>
-        </Card>
+
+            <button
+              type="submit"
+              disabled={isSubmitting}
+              className="w-full py-3 px-4 bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-lg transition duration-200 transform hover:scale-[1.02] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50"
+            >
+              {isSubmitting ? 'Entrando...' : 'Entrar'}
+            </button>
+          </form>
+
+          <div className="mt-6 text-center">
+            <p className="text-sm text-gray-600">
+              Não tem uma conta?{' '}
+              <button
+                onClick={() => navigate('/register')}
+                className="font-medium text-indigo-600 hover:text-indigo-500 transition duration-200"
+              >
+                Crie uma
+              </button>
+            </p>
+          </div>
+        </div>
       </div>
     </div>
   );

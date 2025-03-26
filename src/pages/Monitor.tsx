@@ -1,432 +1,705 @@
+import React, { useEffect, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { useParams, useNavigate } from 'react-router-dom';
+import { io, Socket } from 'socket.io-client';
+import { useAuth } from '@/context/AuthContext';
+import { votes, companies } from '@/services/api';
+import { useToast } from '@/hooks/use-toast';
+import Navbar from '@/components/Navbar';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { 
+  RefreshCw, 
+  TrendingUp, 
+  Users, 
+  Star, 
+  Building2, 
+  AlertTriangle, 
+  Clock, 
+  Activity,
+  LineChart,
+  BarChart3,
+  Heart,
+  ThumbsUp,
+  ThumbsDown,
+  ArrowUpRight,
+  ArrowDownRight,
+  Zap,
+  Bell,
+  CheckCircle2,
+  XCircle
+} from 'lucide-react';
+import { Progress } from '@/components/ui/progress';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { format, subHours, subDays, isWithinInterval } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from '@/components/ui/tabs';
+import { Badge } from '@/components/ui/badge';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { cn } from '@/lib/utils';
 
-import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
-import { companies, serviceTypes, votes } from '@/services/api';
-import { ChartContainer, ChartTooltip } from '@/components/ui/chart';
-import { VoteAnalytics } from '@/types/vote';
-import { ArrowUpRight, BarChart2, LineChart, PieChart as PieChartIcon, TrendingUp } from 'lucide-react';
+interface Vote {
+  id_voto: string;
+  id_empresa: string;
+  id_tipo_servico: string;
+  avaliacao: string;
+  comentario: string;
+  status: boolean;
+  momento_voto: string;
+  serviceType: {
+    id_tipo_servico: string;
+    nome: string;
+  };
+}
 
-const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8', '#26A69A', '#EF5350', '#AB47BC'];
+interface Analytics {
+  totalVotes: number;
+  averageRating: number;
+  avaliacoesPorTipo: {
+    [key: string]: number;
+  };
+  percentuaisPorTipo: {
+    [key: string]: number;
+  };
+  votesByService: {
+    [key: string]: {
+      total: number;
+      average: number;
+      avaliacoes: {
+        [key: string]: number;
+      };
+      percentuais: {
+        [key: string]: number;
+      };
+      votes: Vote[];
+    };
+  };
+  recentVotes: Vote[];
+}
+
+interface Company {
+  id: string;
+  name: string;
+}
+
+type TimeRange = '1h' | '24h' | '7d' | '30d';
 
 const Monitor: React.FC = () => {
-  const [analytics, setAnalytics] = useState<VoteAnalytics | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [currentTime, setCurrentTime] = useState(new Date());
-  
-  // Fetch all analytics data
-  const fetchAnalyticsData = async () => {
-    try {
-      setLoading(true);
-      
-      // Fetch all data
-      const [allVotes, allCompanies, allServiceTypes] = await Promise.all([
-        votes.getAll(),
-        companies.getAll(),
-        serviceTypes.getAll()
-      ]);
-      
-      // Process raw data into analytics format
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      
-      const weekAgo = new Date();
-      weekAgo.setDate(weekAgo.getDate() - 7);
-      weekAgo.setHours(0, 0, 0, 0);
-      
-      // Count votes for different time periods
-      const votesToday = allVotes.filter((vote: any) => 
-        new Date(vote.created_at) >= today
-      ).length;
-      
-      const votesThisWeek = allVotes.filter((vote: any) => 
-        new Date(vote.created_at) >= weekAgo
-      ).length;
-      
-      // Process company votes
-      const companyVotes = new Map<string, number>();
-      allVotes.forEach((vote: any) => {
-        const companyId = vote.id_empresa;
-        companyVotes.set(companyId, (companyVotes.get(companyId) || 0) + 1);
-      });
-      
-      const topCompanies = allCompanies
-        .map((company: any) => ({
-          name: company.name,
-          votes: companyVotes.get(company.id) || 0
-        }))
-        .sort((a, b) => b.votes - a.votes)
-        .slice(0, 5);
-      
-      // Process service type votes
-      const serviceVotes = new Map<string, number>();
-      allVotes.forEach((vote: any) => {
-        const serviceId = vote.id_tipo_servico;
-        serviceVotes.set(serviceId, (serviceVotes.get(serviceId) || 0) + 1);
-      });
-      
-      const topServices = allServiceTypes
-        .map((service: any) => ({
-          name: service.name,
-          votes: serviceVotes.get(service.id) || 0
-        }))
-        .sort((a, b) => b.votes - a.votes)
-        .slice(0, 5);
-      
-      // Process votes by hour
-      const hourCounts = Array(24).fill(0).map((_, i) => ({ hour: i, count: 0 }));
-      allVotes.forEach((vote: any) => {
-        const hour = new Date(vote.created_at).getHours();
-        hourCounts[hour].count += 1;
-      });
-      
-      // Process votes by day
-      const last7Days = Array(7).fill(0).map((_, i) => {
-        const date = new Date();
-        date.setDate(date.getDate() - i);
+  const { companyId: selectedCompanyId } = useParams<{ companyId: string }>();
+  const navigate = useNavigate();
+  const { user } = useAuth();
+  const { toast } = useToast();
+  const [socket, setSocket] = useState<Socket | null>(null);
+  const [analytics, setAnalytics] = useState<Analytics | null>(null);
+  const [timeRange, setTimeRange] = useState<TimeRange>('24h');
+  const [alerts, setAlerts] = useState<Array<{
+    type: 'warning' | 'error' | 'success';
+    message: string;
+    timestamp: Date;
+  }>>([]);
+
+  // Query para buscar todas as empresas
+  const { data: companiesList } = useQuery({
+    queryKey: ['companies'],
+    queryFn: companies.getAll,
+  });
+
+  // Query para buscar dados iniciais
+  const { data: initialAnalytics, refetch } = useQuery({
+    queryKey: ['analytics', selectedCompanyId],
+    queryFn: async () => {
+      if (selectedCompanyId) {
+        const data = await votes.getAnalytics(selectedCompanyId);
         return {
-          day: date.toLocaleDateString('pt-BR', { weekday: 'short' }),
-          date: new Date(date.setHours(0, 0, 0, 0)),
-          count: 0
+          ...data,
+          averageRating: calculateAverageRating(data.avaliacoesPorTipo),
+          votesByService: Object.entries(data.votesByService).reduce((acc, [key, value]) => ({
+            ...acc,
+            [key]: {
+              ...value,
+              average: calculateAverageRating(value.avaliacoes),
+            },
+          }), {}),
         };
-      }).reverse();
+      }
       
-      allVotes.forEach((vote: any) => {
-        const voteDate = new Date(vote.created_at);
-        voteDate.setHours(0, 0, 0, 0);
+      // Se não houver empresa selecionada, buscar dados de todas as empresas
+      const allCompanies = await companies.getAll();
+      const allAnalytics = await Promise.all(
+        allCompanies.map(company => votes.getAnalytics(company.id))
+      );
+
+      // Combinar os dados de todas as empresas
+      const combinedAnalytics: Analytics = {
+        totalVotes: 0,
+        averageRating: 0,
+        avaliacoesPorTipo: {},
+        percentuaisPorTipo: {},
+        votesByService: {},
+        recentVotes: [],
+      };
+
+      allAnalytics.forEach(companyAnalytics => {
+        // Somar total de votos
+        combinedAnalytics.totalVotes += companyAnalytics.totalVotes;
+
+        // Combinar avaliações por tipo
+        Object.entries(companyAnalytics.avaliacoesPorTipo).forEach(([tipo, count]) => {
+          combinedAnalytics.avaliacoesPorTipo[tipo] = (combinedAnalytics.avaliacoesPorTipo[tipo] || 0) + count;
+        });
+
+        // Combinar votos por serviço
+        Object.entries(companyAnalytics.votesByService).forEach(([service, data]) => {
+          if (!combinedAnalytics.votesByService[service]) {
+            combinedAnalytics.votesByService[service] = {
+              total: 0,
+              average: 0,
+              avaliacoes: {},
+              percentuais: {},
+              votes: [],
+            };
+          }
+          combinedAnalytics.votesByService[service].total += data.total;
+          
+          // Combinar avaliações por tipo para cada serviço
+          Object.entries(data.avaliacoes).forEach(([tipo, count]) => {
+            combinedAnalytics.votesByService[service].avaliacoes[tipo] = 
+              (combinedAnalytics.votesByService[service].avaliacoes[tipo] || 0) + count;
+          });
+
+          combinedAnalytics.votesByService[service].votes.push(...data.votes);
+        });
+
+        // Adicionar votos recentes
+        combinedAnalytics.recentVotes.push(...companyAnalytics.recentVotes);
+      });
+
+      // Calcular médias e percentuais
+      combinedAnalytics.averageRating = calculateAverageRating(combinedAnalytics.avaliacoesPorTipo);
+      
+      // Calcular percentuais por tipo
+      Object.entries(combinedAnalytics.avaliacoesPorTipo).forEach(([tipo, count]) => {
+        combinedAnalytics.percentuaisPorTipo[tipo] = (count / combinedAnalytics.totalVotes) * 100;
+      });
+
+      // Calcular médias e percentuais por serviço
+      Object.keys(combinedAnalytics.votesByService).forEach(service => {
+        const serviceData = combinedAnalytics.votesByService[service];
+        serviceData.average = calculateAverageRating(serviceData.avaliacoes);
         
-        const dayIndex = last7Days.findIndex(d => d.date.getTime() === voteDate.getTime());
-        if (dayIndex !== -1) {
-          last7Days[dayIndex].count += 1;
-        }
+        // Calcular percentuais por tipo para cada serviço
+        Object.entries(serviceData.avaliacoes).forEach(([tipo, count]) => {
+          serviceData.percentuais[tipo] = (count / serviceData.total) * 100;
+        });
       });
-      
-      const votesByDay = last7Days.map(d => ({ day: d.day, count: d.count }));
-      
-      // Calculate average
-      const averageVotesPerDay = allVotes.length > 0 
-        ? Math.round((votesThisWeek / 7) * 10) / 10 
-        : 0;
-      
-      setAnalytics({
-        totalVotes: allVotes.length,
-        votesToday,
-        votesThisWeek,
-        averageVotesPerDay,
-        topCompanies,
-        topServices,
-        votesByHour: hourCounts,
-        votesByDay
-      });
-      
-    } catch (error) {
-      console.error("Failed to fetch analytics data:", error);
-    } finally {
-      setLoading(false);
-    }
+
+      // Ordenar votos recentes por data
+      combinedAnalytics.recentVotes.sort((a, b) => 
+        new Date(b.momento_voto).getTime() - new Date(a.momento_voto).getTime()
+      );
+
+      return combinedAnalytics;
+    },
+    enabled: true,
+  });
+
+  const calculateAverageRating = (avaliacoes: { [key: string]: number }) => {
+    const ratingValues = {
+      'Ótimo': 5,
+      'Bom': 4,
+      'Regular': 3,
+      'Ruim': 2,
+    };
+
+    let totalWeight = 0;
+    let weightedSum = 0;
+
+    Object.entries(avaliacoes).forEach(([tipo, count]) => {
+      const value = ratingValues[tipo as keyof typeof ratingValues] || 0;
+      weightedSum += value * count;
+      totalWeight += count;
+    });
+
+    return totalWeight > 0 ? weightedSum / totalWeight : 0;
   };
-  
-  // Fetch initial data
+
   useEffect(() => {
-    fetchAnalyticsData();
-    
-    // Set up auto-refresh (every 30 seconds)
-    const intervalId = setInterval(() => {
-      fetchAnalyticsData();
-      setCurrentTime(new Date());
-    }, 30000);
-    
-    // Clock update every second
-    const clockId = setInterval(() => {
-      setCurrentTime(new Date());
-    }, 1000);
+    if (initialAnalytics) {
+      setAnalytics(initialAnalytics);
+      checkAlerts(initialAnalytics);
+    }
+  }, [initialAnalytics]);
+
+  // Configuração do WebSocket
+  useEffect(() => {
+    if (!selectedCompanyId) return;
+
+    const newSocket = io('http://localhost:3005');
+    setSocket(newSocket);
+
+    newSocket.emit('joinCompanyRoom', selectedCompanyId);
+
+    newSocket.on('voteUpdate', (updatedAnalytics: Analytics) => {
+      setAnalytics(updatedAnalytics);
+      checkAlerts(updatedAnalytics);
+      toast({
+        title: 'Novo voto recebido!',
+        description: 'Os dados foram atualizados em tempo real.',
+      });
+    });
     
     return () => {
-      clearInterval(intervalId);
-      clearInterval(clockId);
+      newSocket.emit('leaveCompanyRoom', selectedCompanyId);
+      newSocket.disconnect();
     };
-  }, []);
-  
-  if (loading && !analytics) {
+  }, [selectedCompanyId, toast]);
+
+  const checkAlerts = (data: Analytics) => {
+    const newAlerts = [];
+
+    // Verificar média geral
+    if (data.averageRating < 3) {
+      newAlerts.push({
+        type: 'warning',
+        message: `Média geral baixa: ${data.averageRating.toFixed(1)}`,
+        timestamp: new Date(),
+      });
+    }
+
+    // Verificar serviços individuais
+    Object.entries(data.votesByService).forEach(([service, serviceData]) => {
+      if (serviceData.average < 3) {
+        newAlerts.push({
+          type: 'warning',
+          message: `Serviço "${service}" com média baixa: ${serviceData.average.toFixed(1)}`,
+          timestamp: new Date(),
+        });
+      }
+    });
+
+    // Verificar tendência de queda
+    if (data.recentVotes.length >= 2) {
+      const lastVote = getRatingValue(data.recentVotes[0].avaliacao);
+      const previousVote = getRatingValue(data.recentVotes[1].avaliacao);
+      if (lastVote < previousVote && lastVote < 3) {
+        newAlerts.push({
+          type: 'error',
+          message: `Tendência de queda detectada: ${previousVote.toFixed(1)} → ${lastVote.toFixed(1)}`,
+          timestamp: new Date(),
+        });
+      }
+    }
+
+    setAlerts(newAlerts);
+  };
+
+  const handleCompanyChange = (companyId: string) => {
+    navigate(`/monitor/${companyId}`);
+  };
+
+  const getTimeRangeLabel = (range: TimeRange) => {
+    switch (range) {
+      case '1h':
+        return 'Última hora';
+      case '24h':
+        return 'Últimas 24 horas';
+      case '7d':
+        return 'Últimos 7 dias';
+      case '30d':
+        return 'Últimos 30 dias';
+    }
+  };
+
+  const getFilteredVotes = (votes: Vote[]) => {
+    const now = new Date();
+    let startDate: Date;
+
+    switch (timeRange) {
+      case '1h':
+        startDate = subHours(now, 1);
+        break;
+      case '24h':
+        startDate = subHours(now, 24);
+        break;
+      case '7d':
+        startDate = subDays(now, 7);
+        break;
+      case '30d':
+        startDate = subDays(now, 30);
+        break;
+    }
+
+    return votes.filter((vote) =>
+      isWithinInterval(new Date(vote.momento_voto), { start: startDate, end: now })
+    );
+  };
+
+  const getRatingValue = (avaliacao: string): number => {
+    switch (avaliacao) {
+      case 'Ótimo':
+        return 5;
+      case 'Bom':
+        return 4;
+      case 'Regular':
+        return 3;
+      case 'Ruim':
+        return 2;
+      default:
+        return 0;
+    }
+  };
+
+  const getRatingColor = (avaliacao: string) => {
+    switch (avaliacao) {
+      case 'Ótimo':
+        return 'text-green-500';
+      case 'Bom':
+        return 'text-blue-500';
+      case 'Regular':
+        return 'text-yellow-500';
+      case 'Ruim':
+        return 'text-red-500';
+      default:
+        return 'text-muted-foreground';
+    }
+  };
+
+  const getRatingIcon = (avaliacao: string) => {
+    switch (avaliacao) {
+      case 'Ótimo':
+        return <Heart className="h-4 w-4 fill-current" />;
+      case 'Bom':
+        return <ThumbsUp className="h-4 w-4" />;
+      case 'Regular':
+        return <Star className="h-4 w-4" />;
+      case 'Ruim':
+        return <ThumbsDown className="h-4 w-4" />;
+      default:
+        return null;
+    }
+  };
+
+  if (!selectedCompanyId) {
     return (
-      <div className="fixed inset-0 flex items-center justify-center bg-black">
-        <div className="w-20 h-20 rounded-full border-4 border-primary border-t-transparent animate-spin"></div>
+      <div className="min-h-screen bg-background flex flex-col">
+        <Navbar />
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-24">
+          <div className="flex flex-col items-center justify-center space-y-4">
+            <Building2 className="h-12 w-12 text-muted-foreground" />
+            <h2 className="text-2xl font-semibold">Selecione uma empresa</h2>
+            <p className="text-muted-foreground">
+              Escolha uma empresa para monitorar em tempo real
+            </p>
+            <Select onValueChange={handleCompanyChange}>
+              <SelectTrigger className="w-[300px]">
+                <SelectValue placeholder="Selecione uma empresa" />
+              </SelectTrigger>
+              <SelectContent>
+                {companiesList?.map((company) => (
+                  <SelectItem key={company.id} value={company.id}>
+                    {company.nome}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
       </div>
     );
   }
   
+  if (!analytics) {
   return (
-    <div className="fixed inset-0 bg-black text-white overflow-hidden">
-      {/* Header with time and date */}
-      <div className="p-4 flex justify-between items-center">
-        <div className="flex items-center">
-          <BarChart2 size={24} className="text-primary mr-2" />
-          <h1 className="text-2xl font-bold">Monitor de Votações</h1>
-        </div>
-        <div className="text-right">
-          <div className="text-3xl font-mono font-bold">
-            {currentTime.toLocaleTimeString('pt-BR')}
-          </div>
-          <div className="text-muted-foreground">
-            {currentTime.toLocaleDateString('pt-BR', { 
-              weekday: 'long', 
-              year: 'numeric', 
-              month: 'long', 
-              day: 'numeric' 
-            })}
+      <div className="min-h-screen bg-background flex flex-col">
+        <Navbar />
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-24">
+          <div className="flex items-center justify-center h-64">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
           </div>
         </div>
       </div>
-      
-      {/* Main content */}
-      <div className="p-4 grid grid-cols-12 gap-4 h-[calc(100vh-80px)]">
-        {/* Left column - Stats */}
-        <div className="col-span-3 flex flex-col gap-4">
-          <Card className="bg-black border-gray-800 text-white">
-            <CardHeader className="pb-2">
-              <CardDescription className="text-gray-400">Votos Totais</CardDescription>
-              <div className="flex items-end justify-between">
-                <CardTitle className="text-4xl font-bold text-white">
-                  {analytics?.totalVotes ?? 0}
-                </CardTitle>
-                <div className="text-xs text-primary flex items-center">
-                  <ArrowUpRight className="h-3 w-3 mr-1" />
-                  Tempo Real
-                </div>
+    );
+  }
+
+  const selectedCompany = companiesList?.find(
+    (company) => company.id === selectedCompanyId
+  );
+
+  const filteredVotes = getFilteredVotes(analytics.recentVotes);
+  const votesInRange = filteredVotes.length;
+  const averageInRange = filteredVotes.reduce((acc, vote) => acc + vote.rating, 0) / (votesInRange || 1);
+
+  return (
+    <div className="min-h-screen bg-background flex flex-col">
+      <Navbar />
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-24">
+        <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-8">
+          <div>
+            <div className="flex items-center space-x-4">
+              <div className="p-2 bg-primary/10 rounded-lg">
+                <Activity className="h-6 w-6 text-primary" />
               </div>
-            </CardHeader>
-          </Card>
-          
-          <Card className="bg-black border-gray-800 text-white">
-            <CardHeader className="pb-2">
-              <CardDescription className="text-gray-400">Votos Hoje</CardDescription>
-              <div className="flex items-end justify-between">
-                <CardTitle className="text-4xl font-bold text-white">
-                  {analytics?.votesToday ?? 0}
-                </CardTitle>
+              <div>
+                <h1 className="text-3xl font-bold tracking-tight">Monitor</h1>
+                <p className="text-muted-foreground">
+                  {selectedCompanyId 
+                    ? `Monitoramento de ${companiesList?.find(c => c.id === selectedCompanyId)?.nome}`
+                    : 'Monitoramento Geral'}
+                </p>
               </div>
-            </CardHeader>
-          </Card>
-          
-          <Card className="bg-black border-gray-800 text-white">
-            <CardHeader className="pb-2">
-              <CardDescription className="text-gray-400">Média Diária</CardDescription>
-              <div className="flex items-end justify-between">
-                <CardTitle className="text-4xl font-bold text-white">
-                  {analytics?.averageVotesPerDay ?? 0}
-                </CardTitle>
-              </div>
-            </CardHeader>
-          </Card>
-          
-          <Card className="bg-black border-gray-800 text-white flex-1">
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <div className="space-y-1">
-                <CardTitle className="text-white">Top Serviços</CardTitle>
-                <CardDescription className="text-gray-400">
-                  Serviços mais votados
-                </CardDescription>
-              </div>
-              <PieChartIcon className="h-4 w-4 text-primary" />
+            </div>
+          </div>
+          <div className="flex items-center space-x-4">
+            <Select
+              value={selectedCompanyId || ''}
+              onValueChange={handleCompanyChange}
+            >
+              <SelectTrigger className="w-[200px]">
+                <SelectValue placeholder="Selecione uma empresa" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="">Todas as Empresas</SelectItem>
+                {companiesList?.map((company) => (
+                  <SelectItem key={company.id} value={company.id}>
+                    {company.nome}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={() => refetch()}
+              className="hover:bg-primary/10"
+            >
+              <RefreshCw className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
+
+        {/* Alertas */}
+        {alerts.length > 0 && (
+          <div className="mb-8 space-y-4">
+            {alerts.map((alert, index) => (
+              <Alert 
+                key={index} 
+                variant={alert.type === 'error' ? 'destructive' : 'default'}
+                className={cn(
+                  "border-l-4",
+                  alert.type === 'error' ? "border-red-500" : 
+                  alert.type === 'warning' ? "border-yellow-500" : 
+                  "border-green-500"
+                )}
+              >
+                {alert.type === 'error' ? (
+                  <XCircle className="h-4 w-4 text-red-500" />
+                ) : alert.type === 'warning' ? (
+                  <AlertTriangle className="h-4 w-4 text-yellow-500" />
+                ) : (
+                  <CheckCircle2 className="h-4 w-4 text-green-500" />
+                )}
+                <AlertTitle>
+                  {alert.type === 'error' ? 'Alerta Crítico' : alert.type === 'warning' ? 'Atenção' : 'Informação'}
+                </AlertTitle>
+                <AlertDescription>{alert.message}</AlertDescription>
+              </Alert>
+            ))}
+          </div>
+        )}
+
+        {/* Status em tempo real */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+          <Card className="bg-gradient-to-br from-primary/5 to-primary/10">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Status</CardTitle>
+              <Activity className="h-4 w-4 text-primary" />
             </CardHeader>
             <CardContent>
-              <div className="h-[250px]">
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie
-                      data={analytics?.topServices}
-                      cx="50%"
-                      cy="50%"
-                      labelLine={false}
-                      outerRadius={80}
-                      fill="#8884d8"
-                      dataKey="votes"
-                      nameKey="name"
-                      label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
-                    >
-                      {analytics?.topServices.map((_, index) => (
-                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                      ))}
-                    </Pie>
-                    <Tooltip />
-                  </PieChart>
-                </ResponsiveContainer>
+              <div className="flex items-center space-x-2">
+                <div className="h-2 w-2 rounded-full bg-green-500 animate-pulse" />
+                <span className="text-sm font-medium">Ativo</span>
+              </div>
+              <p className="text-xs text-muted-foreground mt-1">
+                Recebendo votos em tempo real
+              </p>
+            </CardContent>
+          </Card>
+          
+          <Card className="bg-gradient-to-br from-blue-500/5 to-blue-500/10">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Votos no período</CardTitle>
+              <Users className="h-4 w-4 text-blue-500" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{votesInRange}</div>
+              <p className="text-xs text-muted-foreground">
+                {getTimeRangeLabel(timeRange)}
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-gradient-to-br from-yellow-500/5 to-yellow-500/10">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Média no período</CardTitle>
+              <Star className="h-4 w-4 text-yellow-500" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">
+                {averageInRange.toFixed(1)}
+              </div>
+              <Progress
+                value={(averageInRange / 5) * 100}
+                className="mt-2 bg-yellow-100 dark:bg-yellow-900/20"
+              />
+            </CardContent>
+          </Card>
+          
+          <Card className="bg-gradient-to-br from-green-500/5 to-green-500/10">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Tendência</CardTitle>
+              <TrendingUp className="h-4 w-4 text-green-500" />
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-center space-x-2">
+                {averageInRange >= analytics.averageRating ? (
+                  <Badge variant="default" className="bg-green-500 hover:bg-green-600">
+                    <ArrowUpRight className="h-3 w-3 mr-1" />
+                    Crescendo
+                  </Badge>
+                ) : (
+                  <Badge variant="destructive">
+                    <ArrowDownRight className="h-3 w-3 mr-1" />
+                    Diminuindo
+                  </Badge>
+                )}
+                <span className="text-sm text-muted-foreground">
+                  {Math.abs(averageInRange - analytics.averageRating).toFixed(1)} pontos
+                </span>
               </div>
             </CardContent>
           </Card>
         </div>
         
-        {/* Center column - Main chart */}
-        <div className="col-span-6 flex flex-col gap-4">
-          <Card className="bg-black border-gray-800 text-white flex-1">
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <div className="space-y-1">
-                <CardTitle className="text-white">Tendência de Votos</CardTitle>
-                <CardDescription className="text-gray-400">
-                  Atividade dos últimos 7 dias
-                </CardDescription>
+        {/* Serviços com alertas */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {Object.entries(analytics.votesByService).map(([service, data]) => {
+            const serviceVotes = getFilteredVotes(data.votes);
+            const serviceAverage = serviceVotes.reduce((acc, vote) => acc + vote.rating, 0) / (serviceVotes.length || 1);
+            const hasAlert = serviceAverage < 3;
+
+            return (
+              <Card 
+                key={service} 
+                className={cn(
+                  "bg-gradient-to-br",
+                  hasAlert 
+                    ? "from-red-500/5 to-red-500/10 border-red-500/20" 
+                    : "from-primary/5 to-primary/10"
+                )}
+              >
+                <CardHeader>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-2">
+                      <BarChart3 className={cn(
+                        "h-5 w-5",
+                        hasAlert ? "text-red-500" : "text-primary"
+                      )} />
+                      <CardTitle className="text-lg">{service}</CardTitle>
+                    </div>
+                    {hasAlert && (
+                      <Badge variant="destructive" className="animate-pulse">
+                        <Bell className="h-3 w-3 mr-1" />
+                        Atenção
+                      </Badge>
+                    )}
               </div>
-              <LineChart className="h-4 w-4 text-primary" />
             </CardHeader>
             <CardContent>
-              <div className="h-[400px]">
-                <ResponsiveContainer width="100%" height="100%">
-                  <AreaChart
-                    data={analytics?.votesByDay}
-                    margin={{ top: 10, right: 30, left: 0, bottom: 0 }}
+                  <div className="space-y-4">
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm text-muted-foreground">
+                        Votos no período
+                      </span>
+                      <span className="font-medium">{serviceVotes.length}</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm text-muted-foreground">
+                        Média no período
+                      </span>
+                      <span className={cn(
+                        "font-medium",
+                        getRatingColor(serviceAverage)
+                      )}>
+                        {serviceAverage.toFixed(1)}
+                      </span>
+                    </div>
+                    <Progress
+                      value={(serviceAverage / 5) * 100}
+                      className={cn(
+                        "mt-2",
+                        hasAlert 
+                          ? "bg-red-100 dark:bg-red-900/20" 
+                          : "bg-primary/10"
+                      )}
+                    />
+              </div>
+            </CardContent>
+          </Card>
+            );
+          })}
+        </div>
+
+        {/* Votos recentes com indicadores */}
+        <Card className="mt-8 bg-gradient-to-br from-primary/5 to-primary/10">
+          <CardHeader>
+            <div className="flex items-center space-x-2">
+              <Zap className="h-5 w-5 text-primary" />
+              <CardTitle>Votos Recentes</CardTitle>
+            </div>
+            </CardHeader>
+            <CardContent>
+            <ScrollArea className="h-[300px]">
+              <div className="space-y-4">
+                {filteredVotes.map((vote) => (
+                  <div
+                    key={vote.id_voto}
+                    className={cn(
+                      "flex items-center justify-between p-4 border rounded-lg transition-colors",
+                      getRatingValue(vote.avaliacao) < 3 && "border-red-500/50 bg-red-500/5"
+                    )}
                   >
-                    <defs>
-                      <linearGradient id="colorVotes" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#0088FE" stopOpacity={0.8}/>
-                        <stop offset="95%" stopColor="#0088FE" stopOpacity={0}/>
-                      </linearGradient>
-                    </defs>
-                    <XAxis 
-                      dataKey="day" 
-                      stroke="#6b7280" 
-                      tick={{ fill: '#6b7280' }}
-                    />
-                    <YAxis stroke="#6b7280" tick={{ fill: '#6b7280' }} />
-                    <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
-                    <Tooltip 
-                      contentStyle={{ 
-                        backgroundColor: '#111', 
-                        borderColor: '#374151',
-                        color: 'white'
-                      }}
-                    />
-                    <Area 
-                      type="monotone" 
-                      dataKey="count"
-                      name="Votos"
-                      stroke="#0088FE" 
-                      fillOpacity={1} 
-                      fill="url(#colorVotes)" 
-                    />
-                  </AreaChart>
-                </ResponsiveContainer>
-              </div>
-            </CardContent>
-          </Card>
-          
-          <Card className="bg-black border-gray-800 text-white flex-1">
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <div className="space-y-1">
-                <CardTitle className="text-white">Distribuição por Hora</CardTitle>
-                <CardDescription className="text-gray-400">
-                  Horários com maior atividade
-                </CardDescription>
-              </div>
-              <BarChart2 className="h-4 w-4 text-primary" />
-            </CardHeader>
-            <CardContent>
-              <div className="h-[200px]">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={analytics?.votesByHour}>
-                    <XAxis 
-                      dataKey="hour" 
-                      stroke="#6b7280" 
-                      tick={{ fill: '#6b7280' }}
-                      tickFormatter={(hour) => `${hour}h`}
-                    />
-                    <YAxis stroke="#6b7280" tick={{ fill: '#6b7280' }} />
-                    <Tooltip 
-                      contentStyle={{ 
-                        backgroundColor: '#111', 
-                        borderColor: '#374151',
-                        color: 'white'
-                      }}
-                      formatter={(value) => [`${value} votos`, 'Quantidade']}
-                      labelFormatter={(hour) => `${hour}:00 - ${hour}:59`}
-                    />
-                    <Bar 
-                      dataKey="count" 
-                      name="Votos" 
-                      fill="#00C49F" 
-                      radius={[4, 4, 0, 0]}
-                    />
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-        
-        {/* Right column - Company ranking */}
-        <div className="col-span-3 flex flex-col gap-4">
-          <Card className="bg-black border-gray-800 text-white flex-1">
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <div className="space-y-1">
-                <CardTitle className="text-white">Top Empresas</CardTitle>
-                <CardDescription className="text-gray-400">
-                  Empresas mais votadas
-                </CardDescription>
-              </div>
-              <TrendingUp className="h-4 w-4 text-primary" />
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-6">
-                {analytics?.topCompanies.map((company, index) => (
-                  <div key={index} className="space-y-2">
-                    <div className="flex items-center justify-between">
-                      <div className="font-medium flex items-center">
-                        <span className="w-6 text-muted-foreground">{index + 1}.</span>
-                        <span className="truncate">{company.name}</span>
-                      </div>
-                      <div className="font-mono text-right text-white">{company.votes}</div>
-                    </div>
-                    <div className="w-full bg-gray-800 rounded-full h-2 overflow-hidden">
-                      <div 
-                        className="bg-primary h-2 rounded-full transition-all duration-500"
-                        style={{
-                          width: `${Math.min(100, (company.votes / (analytics.topCompanies[0]?.votes || 1)) * 100)}%`
-                        }}
-                      />
-                    </div>
+                    <div>
+                      <p className="font-medium">{vote.serviceType.nome}</p>
+                      <p className="text-sm text-muted-foreground">
+                        {format(new Date(vote.momento_voto), "dd 'de' MMMM 'às' HH:mm", {
+                          locale: ptBR,
+                        })}
+                      </p>
+                  </div>
+                    <div className="flex items-center space-x-2">
+                      {getRatingIcon(vote.avaliacao)}
+                      <span className={cn("font-medium", getRatingColor(vote.avaliacao))}>
+                        {vote.avaliacao}
+                      </span>
+                </div>
                   </div>
                 ))}
               </div>
+            </ScrollArea>
             </CardContent>
           </Card>
-          
-          <Card className="bg-black border-gray-800 text-white">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-white text-lg">Status do Sistema</CardTitle>
-              <CardDescription className="text-gray-400">
-                Monitoramento em tempo real
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <div className="flex justify-between items-center">
-                  <span>API</span>
-                  <div className="flex items-center">
-                    <div className="w-3 h-3 rounded-full bg-green-500 mr-2 animate-pulse"></div>
-                    <span className="text-green-500">Online</span>
-                  </div>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span>Base de Dados</span>
-                  <div className="flex items-center">
-                    <div className="w-3 h-3 rounded-full bg-green-500 mr-2 animate-pulse"></div>
-                    <span className="text-green-500">Online</span>
-                  </div>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span>Atualizações</span>
-                  <div className="flex items-center">
-                    <div className="w-3 h-3 rounded-full bg-green-500 mr-2 animate-pulse"></div>
-                    <span className="text-green-500">Tempo Real</span>
-                  </div>
-                </div>
-                <div className="pt-2 text-xs text-gray-500 flex justify-between">
-                  <span>Última atualização:</span>
-                  <span>{currentTime.toLocaleTimeString('pt-BR')}</span>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
       </div>
     </div>
   );

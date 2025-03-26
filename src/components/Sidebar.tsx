@@ -1,6 +1,5 @@
-
 import React from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
 import { 
   Home, 
@@ -9,7 +8,8 @@ import {
   LayoutList, 
   LogOut, 
   Activity,
-  Monitor
+  Monitor,
+  ThumbsUp
 } from 'lucide-react';
 import { useTheme } from '@/context/ThemeContext';
 import ThemeToggle from './ThemeToggle';
@@ -27,14 +27,21 @@ import {
   SidebarGroupLabel,
   SidebarGroupContent,
 } from '@/components/ui/sidebar';
+import { Button } from '@/components/ui/button';
 
 const Sidebar: React.FC = () => {
   const { isAuthenticated, logout, user } = useAuth();
   const location = useLocation();
+  const navigate = useNavigate();
   const { theme } = useTheme();
 
   const isActive = (path: string) => {
     return location.pathname === path;
+  };
+
+  const handleLogout = () => {
+    logout();
+    navigate('/login');
   };
 
   const menuItems = isAuthenticated
@@ -48,6 +55,11 @@ const Sidebar: React.FC = () => {
           title: 'Monitor',
           path: '/monitor',
           icon: Monitor,
+        },
+        {
+          title: 'Votos',
+          path: '/votes',
+          icon: ThumbsUp,
         },
         {
           title: 'Empresas',
@@ -94,16 +106,13 @@ const Sidebar: React.FC = () => {
             <SidebarMenu>
               {menuItems.map((item) => (
                 <SidebarMenuItem key={item.path}>
-                  <SidebarMenuButton
-                    asChild
-                    isActive={isActive(item.path)}
-                    tooltip={item.title}
+                  <Link 
+                    to={item.path} 
+                    className={`flex items-center gap-2 px-4 py-2 w-full hover:bg-accent rounded-md ${isActive(item.path) ? 'bg-accent' : ''}`}
                   >
-                    <Link to={item.path} className="flex items-center">
-                      <item.icon className="mr-2 h-5 w-5" />
-                      <span>{item.title}</span>
-                    </Link>
-                  </SidebarMenuButton>
+                    <item.icon className="h-4 w-4" />
+                    <span>{item.title}</span>
+                  </Link>
                 </SidebarMenuItem>
               ))}
             </SidebarMenu>
@@ -111,28 +120,25 @@ const Sidebar: React.FC = () => {
         </SidebarGroup>
       </SidebarContent>
 
-      <SidebarFooter className="p-4 mt-auto">
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center">
-              {isAuthenticated && (
-                <span className="text-sm font-medium text-muted-foreground">
-                  {user?.name}
-                </span>
-              )}
+      <SidebarFooter className="p-4">
+        {isAuthenticated && (
+          <div className="space-y-4">
+            <div className="px-2 py-2 border rounded-md">
+              <div className="text-sm font-medium">{user?.nome}</div>
+              <div className="text-xs text-muted-foreground">{user?.perfil}</div>
             </div>
-            <ThemeToggle />
-          </div>
-          {isAuthenticated && (
-            <SidebarMenuButton 
-              onClick={logout}
-              className="w-full justify-start"
+            <Button
               variant="outline"
+              className="w-full justify-start gap-2"
+              onClick={handleLogout}
             >
-              <LogOut className="mr-2 h-4 w-4" />
-              <span>Logout</span>
-            </SidebarMenuButton>
-          )}
+              <LogOut className="h-4 w-4" />
+              <span>Sair</span>
+            </Button>
+          </div>
+        )}
+        <div className="mt-4">
+          <ThemeToggle />
         </div>
       </SidebarFooter>
     </SidebarComponent>

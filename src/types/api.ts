@@ -1,18 +1,8 @@
-
 // Base API response interface
 export interface ApiResponse<T> {
   success: boolean;
   data: T;
   message?: string;
-}
-
-// Vote interface for API responses
-export interface Vote {
-  id: string;
-  company_name: string;
-  service_type: string;
-  created_at: string;
-  count: number;
 }
 
 // User interface
@@ -22,6 +12,50 @@ export interface User {
   name: string;
   email: string;
   created_at: string;
+}
+
+// Registration request interface
+export interface PerfilAcesso {
+  nome: string;
+  status: boolean;
+}
+
+export interface Empresa {
+  id_empresa: string;
+  nome_empresa: string;
+  status: boolean;
+}
+
+export interface RegisterRequest {
+  username: string;
+  password: string;
+  nome: string;
+  id_perfil: string;
+  perfil_acesso: PerfilAcesso[];
+  empresas: Empresa[];
+  email: string;
+  telcel: string;
+}
+
+// Login request interface
+export interface LoginRequest {
+  username: string;
+  password: string;
+}
+
+// Auth response interface
+export interface AuthResponse {
+  token: string;
+  user: User;
+}
+
+// Vote interface for API responses
+export interface Vote {
+  id: string;
+  company_name: string;
+  service_type: string;
+  created_at: string;
+  count: number;
 }
 
 // Company interface

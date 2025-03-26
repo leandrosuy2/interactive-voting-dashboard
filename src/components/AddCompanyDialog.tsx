@@ -1,5 +1,374 @@
+import React, { useState, useEffect } from 'react';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { companies } from '@/services/api';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { useToast } from '@/hooks/use-toast';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { useAuth } from '@/context/AuthContext';
+import { Company } from '@/types/company';
 
-// I need to fix the TypeScript error with the form data
-// This is a read-only file, so I can't modify it directly
-// Let's create a patch file
-console.error("AddCompanyDialog has a TypeScript error that needs to be fixed in the component itself");
+interface AddCompanyDialogProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onSuccess: () => void;
+  company?: Company;
+}
+
+const AddCompanyDialog: React.FC<AddCompanyDialogProps> = ({
+  open,
+  onOpenChange,
+  onSuccess,
+  company,
+}) => {
+  const { toast } = useToast();
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
+  const [currentStep, setCurrentStep] = useState(0);
+  const [formData, setFormData] = useState({
+    nome: '',
+    razao_social: '',
+    email: '',
+    telcom: '',
+    telcel: '',
+    cnpj: '',
+    qt_funcionarios: '',
+    cep: '',
+    rua: '',
+    numero: '',
+    bairro: '',
+    cidade: '',
+    estado: '',
+    user_edt: user?.username || '',
+  });
+
+  useEffect(() => {
+    if (company) {
+      setFormData({
+        ...company,
+        qt_funcionarios: company.qt_funcionarios.toString(),
+        user_edt: user?.username || '',
+      });
+    } else {
+      setFormData({
+        nome: '',
+        razao_social: '',
+        email: '',
+        telcom: '',
+        telcel: '',
+        cnpj: '',
+        qt_funcionarios: '',
+        cep: '',
+        rua: '',
+        numero: '',
+        bairro: '',
+        cidade: '',
+        estado: '',
+        user_edt: user?.username || '',
+      });
+    }
+  }, [company, user?.username]);
+
+  const createMutation = useMutation({
+    mutationFn: companies.create,
+    onSuccess: () => {
+      onSuccess();
+      onOpenChange(false);
+      setFormData({
+        nome: '',
+        razao_social: '',
+        email: '',
+        telcom: '',
+        telcel: '',
+        cnpj: '',
+        qt_funcionarios: '',
+        cep: '',
+        rua: '',
+        numero: '',
+        bairro: '',
+        cidade: '',
+        estado: '',
+        user_edt: user?.username || '',
+      });
+      setCurrentStep(0);
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Erro",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: (data: { id: string; data: any }) => companies.update(data.id, data.data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['companies'] });
+      onSuccess();
+      onOpenChange(false);
+      setFormData({
+        nome: '',
+        razao_social: '',
+        email: '',
+        telcom: '',
+        telcel: '',
+        cnpj: '',
+        qt_funcionarios: '',
+        cep: '',
+        rua: '',
+        numero: '',
+        bairro: '',
+        cidade: '',
+        estado: '',
+        user_edt: user?.username || '',
+      });
+      setCurrentStep(0);
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Erro",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const dataToSubmit = {
+      ...formData,
+      qt_funcionarios: Number(formData.qt_funcionarios),
+    };
+
+    if (company) {
+      updateMutation.mutate({ id: company.id, data: dataToSubmit });
+    } else {
+      createMutation.mutate(dataToSubmit);
+    }
+  };
+
+  const steps = [
+    {
+      id: 'dados-basicos',
+      title: 'Dados Básicos',
+      content: (
+        <div className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="nome">Nome</Label>
+            <Input
+              id="nome"
+              value={formData.nome}
+              onChange={(e) => setFormData({ ...formData, nome: e.target.value })}
+              required
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="razao_social">Razão Social</Label>
+            <Input
+              id="razao_social"
+              value={formData.razao_social}
+              onChange={(e) => setFormData({ ...formData, razao_social: e.target.value })}
+              required
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="cnpj">CNPJ</Label>
+            <Input
+              id="cnpj"
+              value={formData.cnpj}
+              onChange={(e) => setFormData({ ...formData, cnpj: e.target.value })}
+              required
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="qt_funcionarios">Quantidade de Funcionários</Label>
+            <Input
+              id="qt_funcionarios"
+              type="number"
+              min="1"
+              value={formData.qt_funcionarios}
+              onChange={(e) => setFormData({ ...formData, qt_funcionarios: e.target.value })}
+              required
+            />
+          </div>
+        </div>
+      ),
+    },
+    {
+      id: 'contato',
+      title: 'Contato',
+      content: (
+        <div className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="email">Email</Label>
+            <Input
+              id="email"
+              type="email"
+              value={formData.email}
+              onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+              required
+            />
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="telcom">Telefone Comercial</Label>
+              <Input
+                id="telcom"
+                value={formData.telcom}
+                onChange={(e) => setFormData({ ...formData, telcom: e.target.value })}
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="telcel">Telefone Celular</Label>
+              <Input
+                id="telcel"
+                value={formData.telcel}
+                onChange={(e) => setFormData({ ...formData, telcel: e.target.value })}
+                required
+              />
+            </div>
+          </div>
+        </div>
+      ),
+    },
+    {
+      id: 'endereco',
+      title: 'Endereço',
+      content: (
+        <div className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="cep">CEP</Label>
+            <Input
+              id="cep"
+              value={formData.cep}
+              onChange={(e) => setFormData({ ...formData, cep: e.target.value })}
+              required
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="rua">Rua</Label>
+            <Input
+              id="rua"
+              value={formData.rua}
+              onChange={(e) => setFormData({ ...formData, rua: e.target.value })}
+              required
+            />
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="numero">Número</Label>
+              <Input
+                id="numero"
+                value={formData.numero}
+                onChange={(e) => setFormData({ ...formData, numero: e.target.value })}
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="bairro">Bairro</Label>
+              <Input
+                id="bairro"
+                value={formData.bairro}
+                onChange={(e) => setFormData({ ...formData, bairro: e.target.value })}
+                required
+              />
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="cidade">Cidade</Label>
+              <Input
+                id="cidade"
+                value={formData.cidade}
+                onChange={(e) => setFormData({ ...formData, cidade: e.target.value })}
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="estado">Estado</Label>
+              <Input
+                id="estado"
+                value={formData.estado}
+                onChange={(e) => setFormData({ ...formData, estado: e.target.value })}
+                required
+              />
+            </div>
+          </div>
+        </div>
+      ),
+    },
+  ];
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto p-4 sm:p-6">
+        <DialogHeader>
+          <DialogTitle className="text-xl sm:text-2xl">
+            {company ? 'Editar Empresa' : 'Adicionar Nova Empresa'}
+          </DialogTitle>
+        </DialogHeader>
+        <form onSubmit={handleSubmit}>
+          <Tabs value={steps[currentStep].id} className="w-full">
+            <TabsList className="grid w-full grid-cols-3 h-auto sm:h-10">
+              {steps.map((step, index) => (
+                <TabsTrigger
+                  key={step.id}
+                  value={step.id}
+                  onClick={() => setCurrentStep(index)}
+                  disabled={index > currentStep}
+                  className="text-xs sm:text-sm px-2 sm:px-4 py-2 sm:py-3"
+                >
+                  {step.title}
+                </TabsTrigger>
+              ))}
+            </TabsList>
+            {steps.map((step, index) => (
+              <TabsContent key={step.id} value={step.id} className="mt-4 sm:mt-6">
+                {step.content}
+              </TabsContent>
+            ))}
+          </Tabs>
+          <div className="flex flex-col sm:flex-row justify-between gap-2 sm:gap-4 mt-6">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setCurrentStep((prev) => Math.max(0, prev - 1))}
+              disabled={currentStep === 0}
+              className="w-full sm:w-auto"
+            >
+              <ChevronLeft className="h-4 w-4 mr-2" />
+              Anterior
+            </Button>
+            {currentStep === steps.length - 1 ? (
+              <Button 
+                type="submit" 
+                disabled={createMutation.isPending || updateMutation.isPending}
+                className="w-full sm:w-auto"
+              >
+                {createMutation.isPending || updateMutation.isPending 
+                  ? (company ? 'Salvando...' : 'Criando...') 
+                  : (company ? 'Salvar Alterações' : 'Criar Empresa')}
+              </Button>
+            ) : (
+              <Button
+                type="button"
+                onClick={() => setCurrentStep((prev) => Math.min(steps.length - 1, prev + 1))}
+                className="w-full sm:w-auto"
+              >
+                Próximo
+                <ChevronRight className="h-4 w-4 ml-2" />
+              </Button>
+            )}
+          </div>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+};
+
+export default AddCompanyDialog;

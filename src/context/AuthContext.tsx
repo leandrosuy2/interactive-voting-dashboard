@@ -1,14 +1,13 @@
-
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { auth } from '../services/api';
-import { toast } from 'sonner'; // Import directly from sonner package
+import { auth } from '@/services/api';
+import { toast } from 'sonner';
 
 interface User {
   id: string;
   username: string;
-  name: string;
-  email: string;
+  nome: string;
+  perfil: string;
 }
 
 interface AuthContextType {
@@ -26,36 +25,52 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [token, setToken] = useState<string | null>(null);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const navigate = useNavigate();
 
+  // Initialize auth state from localStorage
   useEffect(() => {
-    // Check if user is logged in from localStorage
-    const storedToken = localStorage.getItem('token');
-    const storedUser = localStorage.getItem('user');
-    
-    if (storedToken && storedUser) {
-      setToken(storedToken);
-      setUser(JSON.parse(storedUser));
-    }
-    
-    setIsLoading(false);
+    const initializeAuth = () => {
+      const storedToken = localStorage.getItem('token');
+      const storedUser = localStorage.getItem('user');
+      
+      if (storedToken && storedUser) {
+        try {
+          const parsedUser = JSON.parse(storedUser);
+          setToken(storedToken);
+          setUser(parsedUser);
+          setIsAuthenticated(true);
+        } catch (error) {
+          console.error('Error parsing stored user:', error);
+          localStorage.removeItem('token');
+          localStorage.removeItem('user');
+        }
+      }
+      
+      setIsLoading(false);
+    };
+
+    initializeAuth();
   }, []);
 
   const login = async (username: string, password: string) => {
     try {
       setIsLoading(true);
       const response = await auth.login(username, password);
-      const { token, user } = response;
+      const { access_token, user } = response;
       
-      localStorage.setItem('token', token);
+      // Store auth data
+      localStorage.setItem('token', access_token);
       localStorage.setItem('user', JSON.stringify(user));
       
-      setToken(token);
+      // Update state
+      setToken(access_token);
       setUser(user);
+      setIsAuthenticated(true);
       
       toast.success('Login realizado com sucesso!');
-      navigate('/dashboard');
+      navigate('/dashboard', { replace: true });
     } catch (error) {
       console.error('Login error:', error);
       toast.error('Falha no login. Verifique suas credenciais.');
@@ -70,7 +85,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setIsLoading(true);
       await auth.register(userData);
       toast.success('Registro realizado com sucesso! Por favor, faça login.');
-      navigate('/login');
+      navigate('/login', { replace: true });
     } catch (error) {
       console.error('Register error:', error);
       toast.error('Falha no registro. Verifique os dados e tente novamente.');
@@ -81,26 +96,31 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const logout = () => {
+    // Clear storage
     localStorage.removeItem('token');
     localStorage.removeItem('user');
+    
+    // Clear state
     setToken(null);
     setUser(null);
+    setIsAuthenticated(false);
+    
     toast.info('Você foi desconectado.');
-    navigate('/login');
+    navigate('/login', { replace: true });
+  };
+
+  const value = {
+    user,
+    token,
+    isAuthenticated,
+    isLoading,
+    login,
+    register,
+    logout
   };
 
   return (
-    <AuthContext.Provider
-      value={{
-        user,
-        token,
-        isAuthenticated: !!token,
-        isLoading,
-        login,
-        register,
-        logout
-      }}
-    >
+    <AuthContext.Provider value={value}>
       {children}
     </AuthContext.Provider>
   );
