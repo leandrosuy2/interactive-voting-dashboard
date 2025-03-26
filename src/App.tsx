@@ -6,6 +6,8 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/context/AuthContext";
 import { ThemeProvider } from "@/context/ThemeContext";
+import { SidebarProvider, SidebarTrigger, SidebarInset } from "@/components/ui/sidebar";
+import Sidebar from "./components/Sidebar";
 import Index from "./pages/Index";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
@@ -33,16 +35,26 @@ const App = () => (
       <BrowserRouter>
         <ThemeProvider>
           <AuthProvider>
-            <Routes>
-              <Route path="/" element={<Index />} />
-              <Route path="/login" element={<Login />} />
-              <Route path="/register" element={<Register />} />
-              <Route path="/dashboard" element={<Dashboard />} />
-              <Route path="/monitor" element={<Monitor />} />
-              <Route path="/companies" element={<Companies />} />
-              <Route path="/service-types" element={<ServiceTypes />} />
-              <Route path="*" element={<NotFound />} />
-            </Routes>
+            <SidebarProvider>
+              <div className="flex min-h-screen w-full">
+                <Sidebar />
+                <SidebarInset className="pt-16">
+                  <div className="container mx-auto px-4 py-4">
+                    <SidebarTrigger className="fixed top-4 left-4 z-50 md:hidden" />
+                    <Routes>
+                      <Route path="/" element={<Index />} />
+                      <Route path="/login" element={<Login />} />
+                      <Route path="/register" element={<Register />} />
+                      <Route path="/dashboard" element={<Dashboard />} />
+                      <Route path="/monitor" element={<Monitor />} />
+                      <Route path="/companies" element={<Companies />} />
+                      <Route path="/service-types" element={<ServiceTypes />} />
+                      <Route path="*" element={<NotFound />} />
+                    </Routes>
+                  </div>
+                </SidebarInset>
+              </div>
+            </SidebarProvider>
           </AuthProvider>
         </ThemeProvider>
       </BrowserRouter>
