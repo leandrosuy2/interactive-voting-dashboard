@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { companies, serviceTypes, votes } from '@/services/api';
 import VoteChart from '@/components/VoteChart';
 import RealTimeVotes from '@/components/RealTimeVotes';
-import RecentVotes from '@/components/RecentVotes';
+import { RecentVotes } from '@/components/RecentVotes';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
