@@ -1,70 +1,50 @@
 import React from 'react';
+import { Vote } from '@/types/vote';
+import { Company } from '@/types/company';
 import {
   Chart as ChartJS,
   CategoryScale,
   LinearScale,
+  PointElement,
+  LineElement,
   BarElement,
+  ArcElement,
   Title,
   Tooltip,
   Legend,
-  ArcElement,
-  PointElement,
-  LineElement,
+  Filler,
 } from 'chart.js';
-import { Bar, Pie, Line } from 'react-chartjs-2';
+import { Pie, Line, Bar } from 'react-chartjs-2';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { Vote } from '@/types/vote';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 ChartJS.register(
   CategoryScale,
   LinearScale,
+  PointElement,
+  LineElement,
   BarElement,
+  ArcElement,
   Title,
   Tooltip,
   Legend,
-  ArcElement,
-  PointElement,
-  LineElement
+  Filler
 );
 
 interface VoteChartsProps {
   votes: Vote[];
+  companies: Company[];
 }
 
-const VoteCharts: React.FC<VoteChartsProps> = ({ votes }) => {
-  const getRatingValue = (avaliacao: string): number => {
-    switch (avaliacao) {
-      case 'Ótimo':
-        return 5;
-      case 'Bom':
-        return 4;
-      case 'Regular':
-        return 3;
-      case 'Ruim':
-        return 2;
-      default:
-        return 0;
-    }
+export const VoteCharts: React.FC<VoteChartsProps> = ({ votes, companies }) => {
+  // Função para obter o nome do serviço
+  const getServiceName = (vote: Vote) => {
+    const company = companies.find(c => c.id === vote.id_empresa);
+    const service = company?.servicos.find(s => s.id === vote.id_tipo_servico);
+    return service?.nome || 'Serviço não encontrado';
   };
 
-  const getRatingColor = (avaliacao: string) => {
-    switch (avaliacao) {
-      case 'Ótimo':
-        return 'rgb(34, 197, 94)'; // green-500
-      case 'Bom':
-        return 'rgb(59, 130, 246)'; // blue-500
-      case 'Regular':
-        return 'rgb(234, 179, 8)'; // yellow-500
-      case 'Ruim':
-        return 'rgb(239, 68, 68)'; // red-500
-      default:
-        return 'rgb(156, 163, 175)'; // gray-400
-    }
-  };
-
-  // Dados para o gráfico de pizza (distribuição de avaliações)
+  // Dados para o gráfico de pizza
   const pieData = {
     labels: ['Ótimo', 'Bom', 'Regular', 'Ruim'],
     datasets: [
@@ -76,40 +56,42 @@ const VoteCharts: React.FC<VoteChartsProps> = ({ votes }) => {
           votes.filter(v => v.avaliacao === 'Ruim').length,
         ],
         backgroundColor: [
-          getRatingColor('Ótimo'),
-          getRatingColor('Bom'),
-          getRatingColor('Regular'),
-          getRatingColor('Ruim'),
+          'rgba(34, 197, 94, 0.8)',
+          'rgba(59, 130, 246, 0.8)',
+          'rgba(234, 179, 8, 0.8)',
+          'rgba(239, 68, 68, 0.8)',
         ],
-        borderWidth: 0,
       },
     ],
   };
 
-  // Dados para o gráfico de linha (tendência de avaliações)
-  const sortedVotes = [...votes].sort((a, b) => 
-    new Date(a.momento_voto).getTime() - new Date(b.momento_voto).getTime()
-  );
-
+  // Dados para o gráfico de linha
   const lineData = {
-    labels: sortedVotes.map(vote => 
-      format(new Date(vote.momento_voto), "dd/MM", { locale: ptBR })
-    ),
+    labels: votes.map(vote => format(new Date(vote.momento_voto), 'dd/MM', { locale: ptBR })),
     datasets: [
       {
-        label: 'Avaliação',
-        data: sortedVotes.map(vote => getRatingValue(vote.avaliacao)),
+        label: 'Avaliações',
+        data: votes.map(vote => {
+          switch (vote.avaliacao) {
+            case 'Ótimo': return 4;
+            case 'Bom': return 3;
+            case 'Regular': return 2;
+            case 'Ruim': return 1;
+            default: return 0;
+          }
+        }),
         borderColor: 'rgb(59, 130, 246)',
-        backgroundColor: 'rgba(59, 130, 246, 0.1)',
+        backgroundColor: 'rgba(59, 130, 246, 0.5)',
         tension: 0.4,
         fill: true,
       },
     ],
   };
 
-  // Dados para o gráfico de barras (votos por serviço)
+  // Dados para o gráfico de barras
   const serviceVotes = votes.reduce((acc, vote) => {
-    acc[vote.serviceType.nome] = (acc[vote.serviceType.nome] || 0) + 1;
+    const serviceName = getServiceName(vote);
+    acc[serviceName] = (acc[serviceName] || 0) + 1;
     return acc;
   }, {} as Record<string, number>);
 
@@ -117,11 +99,9 @@ const VoteCharts: React.FC<VoteChartsProps> = ({ votes }) => {
     labels: Object.keys(serviceVotes),
     datasets: [
       {
-        label: 'Votos',
+        label: 'Votos por Serviço',
         data: Object.values(serviceVotes),
-        backgroundColor: 'rgba(59, 130, 246, 0.5)',
-        borderColor: 'rgb(59, 130, 246)',
-        borderWidth: 1,
+        backgroundColor: 'rgba(59, 130, 246, 0.8)',
       },
     ],
   };
@@ -134,47 +114,34 @@ const VoteCharts: React.FC<VoteChartsProps> = ({ votes }) => {
         position: 'bottom' as const,
       },
     },
+    scales: {
+      y: {
+        beginAtZero: true,
+        max: 4,
+      },
+    },
   };
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-      {/* Gráfico de Pizza */}
-      <Card className="bg-gradient-to-br from-primary/5 to-primary/10">
-        <CardHeader>
-          <CardTitle className="text-lg">Distribuição de Avaliações</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="h-[300px]">
-            <Pie data={pieData} options={chartOptions} />
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Gráfico de Linha */}
-      <Card className="bg-gradient-to-br from-primary/5 to-primary/10">
-        <CardHeader>
-          <CardTitle className="text-lg">Tendência de Avaliações</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="h-[300px]">
-            <Line data={lineData} options={chartOptions} />
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Gráfico de Barras */}
-      <Card className="bg-gradient-to-br from-primary/5 to-primary/10">
-        <CardHeader>
-          <CardTitle className="text-lg">Votos por Serviço</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="h-[300px]">
-            <Bar data={barData} options={chartOptions} />
-          </div>
-        </CardContent>
-      </Card>
+      <div className="bg-white rounded-lg p-4 shadow-sm">
+        <h3 className="text-lg font-semibold mb-4">Distribuição de Avaliações</h3>
+        <div className="h-[300px]">
+          <Pie data={pieData} options={chartOptions} />
+        </div>
+      </div>
+      <div className="bg-white rounded-lg p-4 shadow-sm">
+        <h3 className="text-lg font-semibold mb-4">Tendência de Avaliações</h3>
+        <div className="h-[300px]">
+          <Line data={lineData} options={chartOptions} />
+        </div>
+      </div>
+      <div className="bg-white rounded-lg p-4 shadow-sm">
+        <h3 className="text-lg font-semibold mb-4">Votos por Serviço</h3>
+        <div className="h-[300px]">
+          <Bar data={barData} options={chartOptions} />
+        </div>
+      </div>
     </div>
   );
-};
-
-export default VoteCharts; 
+}; 

@@ -4,6 +4,7 @@ import { useAuth } from '@/context/AuthContext';
 import { votes, companies } from '@/services/api';
 import { useToast } from '@/hooks/use-toast';
 import { Company } from '@/types/company';
+import { Vote } from '@/types/vote';
 import Navbar from '@/components/Navbar';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -69,19 +70,19 @@ const Votes: React.FC = () => {
     
     // Encontra a empresa selecionada e retorna seus serviços
     const company = companiesList.find(c => c.id === selectedCompany);
-    console.log('Serviços da empresa:', company?.servicos);
+    if (!company?.servicos) return [];
     
     // Filtra apenas serviços ativos e remove duplicatas
     const uniqueServices = new Map();
-    company?.servicos
-      .filter(service => service.status)
+    company.servicos
+      .filter(service => service?.status)
       .forEach(service => {
-        uniqueServices.set(service.id, service);
+        if (service?.id && service?.nome) {
+          uniqueServices.set(service.id, service);
+        }
       });
     
-    const services = Array.from(uniqueServices.values());
-    console.log('Serviços filtrados:', services);
-    return services;
+    return Array.from(uniqueServices.values());
   }, [selectedCompany, companiesList]);
 
   // Reset selectedService quando a empresa muda
@@ -185,6 +186,13 @@ const Votes: React.FC = () => {
     }
   };
 
+  // Função para obter o nome do serviço
+  const getServiceName = (vote: Vote) => {
+    const company = companiesList?.find(c => c.id === vote.id_empresa);
+    const service = company?.servicos.find(s => s.id === vote.id_tipo_servico);
+    return service?.nome || 'Serviço não encontrado';
+  };
+
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <Navbar />
@@ -236,7 +244,7 @@ const Votes: React.FC = () => {
                       <SelectContent>
                         {companiesList?.map((company) => (
                           <SelectItem key={company.id} value={company.id}>
-                            {company.nome}
+                            {company.nome || 'Empresa sem nome'}
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -254,9 +262,11 @@ const Votes: React.FC = () => {
                       </SelectTrigger>
                       <SelectContent>
                         {companyServices.map((service) => (
-                          <SelectItem key={service.id} value={service.id}>
-                            {service.nome}
-                          </SelectItem>
+                          service?.id && service?.nome ? (
+                            <SelectItem key={service.id} value={service.id}>
+                              {service.nome}
+                            </SelectItem>
+                          ) : null
                         ))}
                       </SelectContent>
                     </Select>
@@ -329,7 +339,7 @@ const Votes: React.FC = () => {
                   <div className="flex items-center space-x-2">
                     <LayoutList className="h-4 w-4 text-muted-foreground" />
                     <span className="text-sm text-muted-foreground">
-                      {vote.serviceType.nome}
+                      {getServiceName(vote)}
                     </span>
                   </div>
                   <div className="flex items-center space-x-2">

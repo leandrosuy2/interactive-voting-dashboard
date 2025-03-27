@@ -1,11 +1,13 @@
 import React from 'react';
 import { Vote } from '@/types/vote';
+import { Company } from '@/types/company';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { Star } from 'lucide-react';
 
 interface RecentVotesProps {
   votes: Vote[];
+  companies: Company[];
 }
 
 const getRatingStars = (avaliacao: string) => {
@@ -23,7 +25,14 @@ const getRatingStars = (avaliacao: string) => {
   }
 };
 
-export const RecentVotes: React.FC<RecentVotesProps> = ({ votes = [] }) => {
+export const RecentVotes: React.FC<RecentVotesProps> = ({ votes, companies }) => {
+  // Função para obter o nome do serviço
+  const getServiceName = (vote: Vote) => {
+    const company = companies.find(c => c.id === vote.id_empresa);
+    const service = company?.servicos.find(s => s.id === vote.id_tipo_servico);
+    return service?.nome || 'Serviço não encontrado';
+  };
+
   return (
     <div className="space-y-4">
       <h3 className="text-lg font-semibold">Votos Recentes</h3>
@@ -40,7 +49,7 @@ export const RecentVotes: React.FC<RecentVotesProps> = ({ votes = [] }) => {
             >
               <div className="space-y-1">
                 <div className="flex items-center space-x-2">
-                  <span className="font-medium">{vote.serviceType.nome}</span>
+                  <span className="font-medium">{getServiceName(vote)}</span>
                   <span className="text-sm text-muted-foreground">
                     {vote.avaliacao}
                   </span>

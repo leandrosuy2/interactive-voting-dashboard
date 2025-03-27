@@ -1,10 +1,12 @@
 import React from 'react';
 import { Vote } from '@/types/vote';
+import { Company } from '@/types/company';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
 interface NewsTickerProps {
   votes: Vote[];
+  companies: Company[];
 }
 
 const getRatingEmoji = (avaliacao: string) => {
@@ -37,19 +39,23 @@ const getRatingColor = (avaliacao: string) => {
   }
 };
 
-export const NewsTicker: React.FC<NewsTickerProps> = ({ votes }) => {
-  // Duplica os votos para criar o efeito de loop
-  const duplicatedVotes = [...votes, ...votes];
+export const NewsTicker: React.FC<NewsTickerProps> = ({ votes, companies }) => {
+  // Função para obter o nome do serviço
+  const getServiceName = (vote: Vote) => {
+    const company = companies.find(c => c.id === vote.id_empresa);
+    const service = company?.servicos.find(s => s.id === vote.id_tipo_servico);
+    return service?.nome || 'Serviço não encontrado';
+  };
 
   return (
     <div className="w-full overflow-hidden bg-muted/50 py-2">
       <div className="flex animate-ticker whitespace-nowrap">
-        {duplicatedVotes.map((vote, index) => (
+        {votes.map((vote, index) => (
           <div
             key={`${vote.id_voto}-${index}`}
             className="mx-4 inline-flex items-center space-x-2 rounded-full bg-background px-4 py-1 text-sm shadow-sm"
           >
-            <span className="font-medium">{vote.serviceType.nome}</span>
+            <span className="font-medium">{getServiceName(vote)}</span>
             <span className={`text-lg ${getRatingColor(vote.avaliacao)}`}>
               {getRatingEmoji(vote.avaliacao)}
             </span>

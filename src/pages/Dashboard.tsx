@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { companies, serviceTypes, votes } from '@/services/api';
+import { serviceTypes, votes, companies } from '@/services/api';
 import VoteChart from '@/components/VoteChart';
 import RealTimeVotes from '@/components/RealTimeVotes';
 import { RecentVotes } from '@/components/RecentVotes';
@@ -27,7 +27,7 @@ import { toast } from 'sonner';
 import { Vote } from '@/types/vote';
 import { Company } from '@/types/company';
 import { ServiceType } from '@/types/serviceType';
-import VoteCharts from '@/components/VoteCharts';
+import { VoteCharts } from '@/components/VoteCharts';
 import { NewsTicker } from '@/components/NewsTicker';
 
 interface CompanyVotes {
@@ -55,6 +55,7 @@ const Dashboard: React.FC = () => {
     week: 0,
     month: 0
   });
+  const [companiesList, setCompaniesList] = useState<Company[]>([]);
 
   const fetchData = async () => {
     try {
@@ -63,7 +64,10 @@ const Dashboard: React.FC = () => {
       // Fetch all required data
       const [allVotes, allCompanies, allServiceTypes] = await Promise.all([
         votes.getAll(),
-        companies.getAll(),
+        companies.getAll().catch(error => {
+          console.error('Erro ao carregar empresas:', error);
+          return [];
+        }),
         serviceTypes.getAll()
       ]);
 
@@ -72,6 +76,7 @@ const Dashboard: React.FC = () => {
       setTotalCompanies(allCompanies.length);
       setTotalServiceTypes(allServiceTypes.length);
       setAllVotes(allVotes);
+      setCompaniesList(allCompanies);
 
       // Process company votes
       const companyVotesMap = new Map<string, number>();
@@ -165,6 +170,10 @@ const Dashboard: React.FC = () => {
     return () => clearInterval(intervalId);
   }, []);
 
+  if (loading) {
+    return <div>Carregando...</div>;
+  }
+
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
@@ -189,7 +198,7 @@ const Dashboard: React.FC = () => {
             </div>
           </div>
 
-          <NewsTicker votes={allVotes.slice(0, 10)} />
+          <NewsTicker votes={allVotes} companies={companiesList} />
 
           {/* Stats Cards */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -281,7 +290,7 @@ const Dashboard: React.FC = () => {
               <CardTitle>Análise Detalhada</CardTitle>
             </CardHeader>
             <CardContent>
-              <VoteCharts votes={allVotes} />
+              <VoteCharts votes={allVotes} companies={companiesList} />
             </CardContent>
           </Card>
 
@@ -302,7 +311,7 @@ const Dashboard: React.FC = () => {
               </Card>
             </div>
             <div className="lg:col-span-1">
-              <RecentVotes votes={allVotes.slice(0, 10)} />
+              <RecentVotes votes={allVotes} companies={companiesList} />
             </div>
           </div>
         </div>
