@@ -2,6 +2,8 @@ import axios from 'axios';
 import { Vote, VoteAnalytics } from '../types/vote';
 import { Company, CompanyService, CreateCompanyRequest, UpdateCompanyRequest, CreateCompanyServiceRequest } from '../types/company';
 import { ServiceType, CreateServiceTypeRequest, UpdateServiceTypeRequest } from '../types/serviceType';
+import { CreateUserRequest, UpdateUserRequest } from '../types/user';
+import { Permission } from '../types/permission';
 
 // Create an axios instance with base configurations
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3005';
@@ -49,7 +51,14 @@ export const auth = {
     const response = await api.post('/auth/login', { username, password });
     return response.data;
   },
-  register: async (userData: { username: string; password: string; email: string; name: string }) => {
+  register: async (userData: { 
+    username: string; 
+    password: string; 
+    email: string; 
+    nome: string;
+    cargo: string;
+    perfil_acesso: string;
+  }) => {
     const response = await api.post('/auth/register', userData);
     return response.data;
   },
@@ -57,20 +66,25 @@ export const auth = {
 
 // Users APIs
 export const users = {
-  getAll: async () => {
-    const response = await api.get('/users');
+  getAll: () => api.get('/users').then((response) => response.data),
+  getById: (id: string) => api.get(`/users/${id}`).then((response) => response.data),
+  getByUsername: (username: string) =>
+    api.get(`/users/username/${username}`).then((response) => response.data),
+  create: (data: CreateUserRequest) =>
+    api.post('/users', data).then((response) => response.data),
+  update: (id: string, data: UpdateUserRequest) =>
+    api.put(`/users/${id}`, data).then((response) => response.data),
+  delete: (id: string) => api.delete(`/users/${id}`).then((response) => response.data),
+  getAccessProfiles: () => api.get('/users/access-profiles').then((response) => response.data),
+  getPermissions: async (userId: string): Promise<Permission[]> => {
+    const response = await api.get(`/users/${userId}/permissions`);
     return response.data;
   },
-  getById: async (id: string) => {
-    const response = await api.get(`/users/${id}`);
-    return response.data;
-  },
-  getByUsername: async (username: string) => {
-    const response = await api.get(`/users/username/${username}`);
-    return response.data;
-  },
-  delete: async (id: string) => {
-    const response = await api.delete(`/users/${id}`);
+  updatePermission: async (userId: string, permission: string, has_permission: boolean) => {
+    const response = await api.put(`/users/${userId}/permissions`, {
+      permission,
+      has_permission
+    });
     return response.data;
   },
 };

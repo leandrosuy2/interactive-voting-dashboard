@@ -4,7 +4,6 @@ import { useAuth } from '@/context/AuthContext';
 import { votes, companies } from '@/services/api';
 import { useToast } from '@/hooks/use-toast';
 import { Company } from '@/types/company';
-import { Vote } from '@/types/vote';
 import Navbar from '@/components/Navbar';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -41,6 +40,7 @@ import {
 } from '@/components/ui/dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
+import { TableCell } from '@/components/ui/table';
 
 const Votes: React.FC = () => {
   const { user } = useAuth();
@@ -184,13 +184,6 @@ const Votes: React.FC = () => {
       default:
         return null;
     }
-  };
-
-  // Função para obter o nome do serviço
-  const getServiceName = (vote: Vote) => {
-    const company = companiesList?.find(c => c.id === vote.id_empresa);
-    const service = company?.servicos.find(s => s.id === vote.id_tipo_servico);
-    return service?.nome || 'Serviço não encontrado';
   };
 
   return (
@@ -339,7 +332,7 @@ const Votes: React.FC = () => {
                   <div className="flex items-center space-x-2">
                     <LayoutList className="h-4 w-4 text-muted-foreground" />
                     <span className="text-sm text-muted-foreground">
-                      {getServiceName(vote)}
+                      {vote.serviceType?.nome || 'Serviço não especificado'}
                     </span>
                   </div>
                   <div className="flex items-center space-x-2">

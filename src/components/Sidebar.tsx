@@ -9,7 +9,8 @@ import {
   LogOut, 
   Activity,
   Monitor,
-  ThumbsUp
+  ThumbsUp,
+  Users
 } from 'lucide-react';
 import { useTheme } from '@/context/ThemeContext';
 import ThemeToggle from './ThemeToggle';
@@ -65,6 +66,11 @@ const Sidebar: React.FC = () => {
           title: 'Empresas',
           path: '/companies',
           icon: Building,
+        },
+        {
+          title: 'Usuários',
+          path: '/users',
+          icon: Users,
         },
         // {
         //   title: 'Serviços',

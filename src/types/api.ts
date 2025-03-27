@@ -29,12 +29,11 @@ export interface Empresa {
 export interface RegisterRequest {
   username: string;
   password: string;
-  nome: string;
-  id_perfil: string;
-  perfil_acesso: PerfilAcesso[];
-  empresas: Empresa[];
   email: string;
-  telcel: string;
+  nome: string;
+  cargo: string;
+  perfil_acesso: string;
+  telcel?: string;
 }
 
 // Login request interface

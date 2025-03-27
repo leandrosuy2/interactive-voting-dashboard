@@ -42,8 +42,11 @@ const getRatingColor = (avaliacao: string) => {
 export const NewsTicker: React.FC<NewsTickerProps> = ({ votes, companies }) => {
   // Função para obter o nome do serviço
   const getServiceName = (vote: Vote) => {
+    if (!companies || companies.length === 0) return 'Carregando...';
     const company = companies.find(c => c.id === vote.id_empresa);
-    const service = company?.servicos.find(s => s.id === vote.id_tipo_servico);
+    if (!company) return 'Empresa não encontrada';
+    if (!company.servicos) return 'Serviços não disponíveis';
+    const service = company.servicos.find(s => s.id === vote.id_tipo_servico);
     return service?.nome || 'Serviço não encontrado';
   };
 

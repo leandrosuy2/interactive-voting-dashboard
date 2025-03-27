@@ -1,0 +1,789 @@
+import React, { useState } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { format, parseISO } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
+import { Plus, Pencil, Trash2, Search, RefreshCw, Users as UsersIcon } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog';
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+  FormDescription,
+} from '@/components/ui/form';
+import { Input } from '@/components/ui/input';
+import { useToast } from '@/components/ui/use-toast';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { useForm } from 'react-hook-form';
+import * as z from 'zod';
+import { User, CreateUserRequest, UpdateUserRequest } from '@/types/user';
+import { users, companies } from '@/services/api';
+import Navbar from '@/components/Navbar';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { PermissionsTree } from '@/components/PermissionsTree';
+import { toast } from 'sonner';
+import { Permission } from '@/types/permission';
+
+interface AccessProfile {
+  value: string;
+  label: string;
+}
+
+const userSchema = z.object({
+  username: z.string().min(3, 'Username deve ter no mínimo 3 caracteres'),
+  password: z.string().min(6, 'Senha deve ter no mínimo 6 caracteres'),
+  email: z.string().email('Email inválido'),
+  nome: z.string().min(3, 'Nome deve ter no mínimo 3 caracteres'),
+  cargo: z.string().min(2, 'Cargo deve ter no mínimo 2 caracteres'),
+  telcel: z.string().optional(),
+  setor: z.string().optional(),
+  image: z.string().optional(),
+  perfil_acesso: z.string().min(1, 'Perfil de acesso é obrigatório'),
+  empresas: z.array(z.string()).min(1, 'Selecione pelo menos uma empresa')
+});
+
+const updateUserSchema = userSchema.partial();
+
+export default function Users() {
+  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [selectedUser, setSelectedUser] = useState<User | null>(null);
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  const [searchTerm, setSearchTerm] = useState('');
+  const [userPermissions, setUserPermissions] = useState<Permission[]>([]);
+  const [loadingPermissions, setLoadingPermissions] = useState(false);
+
+  const { data: usersList, isLoading } = useQuery({
+    queryKey: ['users'],
+    queryFn: users.getAll,
+  });
+
+  const { data: accessProfiles } = useQuery({
+    queryKey: ['access-profiles'],
+    queryFn: () => users.getAccessProfiles(),
+  });
+
+  const { data: companiesList } = useQuery({
+    queryKey: ['companies'],
+    queryFn: companies.getAll,
+  });
+
+  const createUserMutation = useMutation({
+    mutationFn: (data: CreateUserRequest) => users.create(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['users'] });
+      setIsCreateDialogOpen(false);
+      toast({
+        title: 'Sucesso',
+        description: 'Usuário criado com sucesso!',
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: 'Erro',
+        description: error.response?.data?.message || 'Erro ao criar usuário',
+        variant: 'destructive',
+      });
+    },
+  });
+
+  const updateUserMutation = useMutation({
+    mutationFn: ({ id, data }: { id: string; data: UpdateUserRequest }) =>
+      users.update(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['users'] });
+      setIsEditDialogOpen(false);
+      setSelectedUser(null);
+      toast({
+        title: 'Sucesso',
+        description: 'Usuário atualizado com sucesso!',
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: 'Erro',
+        description: error.response?.data?.message || 'Erro ao atualizar usuário',
+        variant: 'destructive',
+      });
+    },
+  });
+
+  const deleteUserMutation = useMutation({
+    mutationFn: (id: string) => users.delete(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['users'] });
+      toast({
+        title: 'Sucesso',
+        description: 'Usuário excluído com sucesso!',
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: 'Erro',
+        description: error.response?.data?.message || 'Erro ao excluir usuário',
+        variant: 'destructive',
+      });
+    },
+  });
+
+  const form = useForm<CreateUserRequest>({
+    resolver: zodResolver(userSchema),
+    defaultValues: {
+      username: '',
+      password: '',
+      email: '',
+      nome: '',
+      cargo: '',
+      telcel: '',
+      setor: '',
+      image: '',
+      perfil_acesso: '',
+      empresas: [],
+    },
+  });
+
+  const updateForm = useForm<UpdateUserRequest>({
+    resolver: zodResolver(updateUserSchema),
+    defaultValues: {
+      username: '',
+      email: '',
+      nome: '',
+      cargo: '',
+      telcel: '',
+      setor: '',
+      image: '',
+      perfil_acesso: '',
+      empresas: [],
+    },
+  });
+
+  const onSubmit = (data: CreateUserRequest) => {
+    createUserMutation.mutate(data);
+  };
+
+  const onUpdate = (data: UpdateUserRequest) => {
+    if (selectedUser) {
+      updateUserMutation.mutate({ id: selectedUser.id, data });
+    }
+  };
+
+  const handleDelete = (id: string) => {
+    if (window.confirm('Tem certeza que deseja excluir este usuário?')) {
+      deleteUserMutation.mutate(id);
+    }
+  };
+
+  const handleEditUser = async (user: User) => {
+    try {
+      setLoadingPermissions(true);
+      const permissions = await users.getPermissions(user.id);
+      setUserPermissions(permissions);
+      setSelectedUser(user);
+      setIsEditDialogOpen(true);
+    } catch (error) {
+      console.error('Erro ao carregar permissões:', error);
+      toast({
+        title: "Erro",
+        description: "Erro ao carregar permissões do usuário",
+        variant: "destructive",
+      });
+    } finally {
+      setLoadingPermissions(false);
+    }
+  };
+
+  const filteredUsers = usersList?.filter((user) => {
+    const searchLower = searchTerm.toLowerCase();
+    return (
+      user.username.toLowerCase().includes(searchLower) ||
+      user.nome.toLowerCase().includes(searchLower) ||
+      user.email.toLowerCase().includes(searchLower) ||
+      user.cargo?.toLowerCase().includes(searchLower)
+    );
+  });
+
+  const handleRefresh = () => {
+    queryClient.invalidateQueries({ queryKey: ['users'] });
+    toast({
+      title: "Atualizado",
+      description: "Lista de usuários atualizada com sucesso",
+    });
+  };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-background flex flex-col">
+        <Navbar />
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-24">
+          <div className="grid grid-cols-1 gap-6">
+            {[...Array(5)].map((_, index) => (
+              <div 
+                key={index} 
+                className="h-[60px] rounded-lg bg-secondary/30 animate-pulse"
+              />
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-background flex flex-col">
+      <Navbar />
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-24">
+        <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-8">
+          <div>
+            <h1 className="text-2xl md:text-3xl font-bold tracking-tight mb-2">Usuários</h1>
+            <p className="text-muted-foreground max-w-2xl">
+              Gerencie os usuários que têm acesso ao sistema.
+            </p>
+          </div>
+          <div className="flex items-center gap-4 mt-4 md:mt-0">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleRefresh}
+              className="flex items-center gap-2"
+            >
+              <RefreshCw className="h-4 w-4" />
+              <span>Atualizar</span>
+            </Button>
+            <Button 
+              onClick={() => setIsCreateDialogOpen(true)}
+              className="flex items-center gap-2"
+            >
+              <Plus className="h-4 w-4" />
+              <span>Novo Usuário</span>
+            </Button>
+          </div>
+        </div>
+
+        <div className="relative mb-6">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Buscar usuários..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="pl-10"
+          />
+        </div>
+
+        {usersList?.length === 0 ? (
+          <div className="text-center py-12 border border-dashed rounded-lg border-border bg-secondary/20 flex flex-col items-center justify-center">
+            <UsersIcon className="h-12 w-12 text-muted-foreground mb-4" />
+            <h3 className="text-lg font-medium mb-2">Nenhum usuário cadastrado</h3>
+            <p className="text-muted-foreground mb-6 max-w-md">
+              Adicione usuários para que possam acessar o sistema.
+            </p>
+            <Button onClick={() => setIsCreateDialogOpen(true)}>
+              <Plus className="h-4 w-4 mr-2" />
+              Novo Usuário
+            </Button>
+          </div>
+        ) : (
+          <div className="rounded-md border">
+            <div className="relative w-full overflow-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="w-[150px]">Username</TableHead>
+                    <TableHead className="w-[200px]">Nome</TableHead>
+                    <TableHead className="w-[200px]">Email</TableHead>
+                    <TableHead className="w-[150px]">Cargo</TableHead>
+                    <TableHead className="w-[150px]">Perfil</TableHead>
+                    <TableHead className="w-[200px]">Empresas</TableHead>
+                    <TableHead className="w-[150px]">Criado em</TableHead>
+                    <TableHead className="w-[100px] text-right">Ações</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredUsers?.map((user) => (
+                    <TableRow key={user.id}>
+                      <TableCell className="font-medium">{user.username}</TableCell>
+                      <TableCell>{user.nome}</TableCell>
+                      <TableCell>{user.email}</TableCell>
+                      <TableCell>{user.cargo}</TableCell>
+                      <TableCell>{user.perfil_acesso}</TableCell>
+                      <TableCell>
+                        {user.empresas?.length > 0
+                          ? user.empresas.map((empresa) => empresa.nome).join(', ')
+                          : 'Nenhuma empresa'}
+                      </TableCell>
+                      <TableCell>
+                        {user.created_at ? (
+                          format(parseISO(user.created_at), 'dd/MM/yyyy HH:mm', {
+                            locale: ptBR,
+                          })
+                        ) : (
+                          'Data não disponível'
+                        )}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex justify-end gap-2">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleEditUser(user)}
+                          >
+                            <Pencil className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleDelete(user.id)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          </div>
+        )}
+
+        <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+          <DialogContent className="sm:max-w-[700px]">
+            <DialogHeader>
+              <DialogTitle>Novo Usuário</DialogTitle>
+            </DialogHeader>
+            <Tabs defaultValue="dados-pessoais" className="w-full">
+              <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="dados-pessoais">Dados Pessoais</TabsTrigger>
+                <TabsTrigger value="acesso">Acesso ao Sistema</TabsTrigger>
+              </TabsList>
+              <Form {...form}>
+                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 mt-4">
+                  <TabsContent value="dados-pessoais">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <FormField
+                        control={form.control}
+                        name="nome"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Nome</FormLabel>
+                            <FormControl>
+                              <Input {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={form.control}
+                        name="email"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Email</FormLabel>
+                            <FormControl>
+                              <Input type="email" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={form.control}
+                        name="cargo"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Cargo</FormLabel>
+                            <FormControl>
+                              <Input {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={form.control}
+                        name="telcel"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Telefone Celular</FormLabel>
+                            <FormControl>
+                              <Input {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={form.control}
+                        name="setor"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Setor</FormLabel>
+                            <FormControl>
+                              <Input {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={form.control}
+                        name="image"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>URL da Imagem</FormLabel>
+                            <FormControl>
+                              <Input {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={form.control}
+                        name="empresas"
+                        render={({ field }) => (
+                          <FormItem className="col-span-full">
+                            <FormLabel>Empresas</FormLabel>
+                            <FormControl>
+                              <select
+                                multiple
+                                {...field}
+                                value={field.value || []}
+                                onChange={(e) => {
+                                  const selectedOptions = Array.from(e.target.selectedOptions).map(
+                                    (option) => option.value
+                                  );
+                                  field.onChange(selectedOptions);
+                                }}
+                                className="flex h-32 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                              >
+                                {companiesList?.map((company) => (
+                                  <option key={company.id} value={company.id}>
+                                    {company.nome}
+                                  </option>
+                                ))}
+                              </select>
+                            </FormControl>
+                            <FormDescription>
+                              Segure CTRL (Windows) ou Command (Mac) para selecionar múltiplas empresas
+                            </FormDescription>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+                  </TabsContent>
+                  <TabsContent value="acesso">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <FormField
+                        control={form.control}
+                        name="username"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Username</FormLabel>
+                            <FormControl>
+                              <Input {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={form.control}
+                        name="password"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Senha</FormLabel>
+                            <FormControl>
+                              <Input type="password" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={form.control}
+                        name="perfil_acesso"
+                        render={({ field }) => (
+                          <FormItem className="col-span-full">
+                            <FormLabel>Perfil de Acesso</FormLabel>
+                            <FormControl>
+                              <select
+                                {...field}
+                                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                              >
+                                <option value="">Selecione um perfil</option>
+                                {accessProfiles?.map((profile) => (
+                                  <option key={profile.value} value={profile.value}>
+                                    {profile.label}
+                                  </option>
+                                ))}
+                              </select>
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+                  </TabsContent>
+                  <div className="flex justify-end pt-4">
+                    <Button type="submit" className="w-full md:w-auto">
+                      Criar Usuário
+                    </Button>
+                  </div>
+                </form>
+              </Form>
+            </Tabs>
+          </DialogContent>
+        </Dialog>
+
+        <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+          <DialogContent className="sm:max-w-[700px]">
+            <DialogHeader>
+              <DialogTitle>Editar Usuário</DialogTitle>
+            </DialogHeader>
+            <Tabs defaultValue="dados-pessoais" className="w-full">
+              <TabsList className="grid w-full grid-cols-3">
+                <TabsTrigger value="dados-pessoais">Dados Pessoais</TabsTrigger>
+                <TabsTrigger value="acesso">Acesso ao Sistema</TabsTrigger>
+                <TabsTrigger value="permissoes">Permissões</TabsTrigger>
+              </TabsList>
+              <Form {...updateForm}>
+                <form onSubmit={updateForm.handleSubmit(onUpdate)} className="space-y-4 mt-4">
+                  <TabsContent value="dados-pessoais">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <FormField
+                        control={updateForm.control}
+                        name="nome"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Nome</FormLabel>
+                            <FormControl>
+                              <Input {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={updateForm.control}
+                        name="email"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Email</FormLabel>
+                            <FormControl>
+                              <Input type="email" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={updateForm.control}
+                        name="cargo"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Cargo</FormLabel>
+                            <FormControl>
+                              <Input {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={updateForm.control}
+                        name="telcel"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Telefone Celular</FormLabel>
+                            <FormControl>
+                              <Input {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={updateForm.control}
+                        name="setor"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Setor</FormLabel>
+                            <FormControl>
+                              <Input {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={updateForm.control}
+                        name="image"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>URL da Imagem</FormLabel>
+                            <FormControl>
+                              <Input {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={updateForm.control}
+                        name="empresas"
+                        render={({ field }) => (
+                          <FormItem className="col-span-full">
+                            <FormLabel>Empresas</FormLabel>
+                            <FormControl>
+                              <select
+                                multiple
+                                {...field}
+                                value={field.value || []}
+                                onChange={(e) => {
+                                  const selectedOptions = Array.from(e.target.selectedOptions).map(
+                                    (option) => option.value
+                                  );
+                                  field.onChange(selectedOptions);
+                                }}
+                                className="flex h-32 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                              >
+                                {companiesList?.map((company) => (
+                                  <option key={company.id} value={company.id}>
+                                    {company.nome}
+                                  </option>
+                                ))}
+                              </select>
+                            </FormControl>
+                            <FormDescription>
+                              Segure CTRL (Windows) ou Command (Mac) para selecionar múltiplas empresas
+                            </FormDescription>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+                    <div className="flex justify-end pt-4">
+                      <Button type="submit" className="w-full md:w-auto">
+                        Atualizar Usuário
+                      </Button>
+                    </div>
+                  </TabsContent>
+                  <TabsContent value="acesso">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <FormField
+                        control={updateForm.control}
+                        name="username"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Username</FormLabel>
+                            <FormControl>
+                              <Input {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={updateForm.control}
+                        name="password"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Senha (deixe em branco para manter a atual)</FormLabel>
+                            <FormControl>
+                              <Input type="password" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={updateForm.control}
+                        name="perfil_acesso"
+                        render={({ field }) => (
+                          <FormItem className="col-span-full">
+                            <FormLabel>Perfil de Acesso</FormLabel>
+                            <FormControl>
+                              <select
+                                {...field}
+                                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                              >
+                                <option value="">Selecione um perfil</option>
+                                {accessProfiles?.map((profile) => (
+                                  <option key={profile.value} value={profile.value}>
+                                    {profile.label}
+                                  </option>
+                                ))}
+                              </select>
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+                    <div className="flex justify-end pt-4">
+                      <Button type="submit" className="w-full md:w-auto">
+                        Atualizar Usuário
+                      </Button>
+                    </div>
+                  </TabsContent>
+                </form>
+              </Form>
+              <TabsContent value="permissoes" className="space-y-4">
+                <div className="space-y-2">
+                  <h3 className="text-lg font-semibold">Permissões do Usuário</h3>
+                  <p className="text-sm text-muted-foreground">
+                    Gerencie as permissões do usuário selecionando as opções abaixo.
+                  </p>
+                </div>
+                {selectedUser && (
+                  <PermissionsTree
+                    permissions={userPermissions}
+                    isLoading={loadingPermissions}
+                    onPermissionChange={async (permission, has_permission) => {
+                      try {
+                        await users.updatePermission(selectedUser.id, permission, has_permission);
+                        // Recarrega as permissões do usuário
+                        const updatedPermissions = await users.getPermissions(selectedUser.id);
+                        setUserPermissions(updatedPermissions);
+                        toast({
+                          title: "Sucesso",
+                          description: "Permissão atualizada com sucesso",
+                        });
+                      } catch (error) {
+                        console.error('Erro ao atualizar permissão:', error);
+                        toast({
+                          title: "Erro",
+                          description: "Erro ao atualizar permissão",
+                          variant: "destructive",
+                        });
+                      }
+                    }}
+                  />
+                )}
+              </TabsContent>
+            </Tabs>
+          </DialogContent>
+        </Dialog>
+      </div>
+    </div>
+  );
+} 
