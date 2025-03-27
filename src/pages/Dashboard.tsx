@@ -302,7 +302,7 @@ const Dashboard: React.FC = () => {
               </Card>
             </div>
             <div className="lg:col-span-1">
-              <RecentVotes />
+              <RecentVotes votes={allVotes.slice(0, 10)} />
             </div>
           </div>
         </div>
