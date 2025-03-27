@@ -4,6 +4,7 @@ import { Company, CompanyService, CreateCompanyRequest, UpdateCompanyRequest, Cr
 import { ServiceType, CreateServiceTypeRequest, UpdateServiceTypeRequest } from '../types/serviceType';
 import { CreateUserRequest, UpdateUserRequest } from '../types/user';
 import { Permission } from '../types/permission';
+import { Service } from '../types/service';
 
 // Create an axios instance with base configurations
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3005';
@@ -155,8 +156,8 @@ export const companies = {
     return response.data;
   },
 
-  getServices: async (id: string): Promise<CompanyService[]> => {
-    const response = await api.get(`/companies/${id}/services`);
+  getServices: async (companyId: string): Promise<Service[]> => {
+    const response = await api.get(`/companies/${companyId}/services`);
     return response.data;
   },
 

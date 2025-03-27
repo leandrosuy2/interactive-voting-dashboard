@@ -4,6 +4,8 @@ import { useAuth } from '@/context/AuthContext';
 import { votes, companies } from '@/services/api';
 import { useToast } from '@/hooks/use-toast';
 import { Company } from '@/types/company';
+import { Service } from '@/types/service';
+import { Vote } from '@/types/vote';
 import Navbar from '@/components/Navbar';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -41,6 +43,12 @@ import {
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
 import { TableCell } from '@/components/ui/table';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 const Votes: React.FC = () => {
   const { user } = useAuth();
@@ -64,26 +72,33 @@ const Votes: React.FC = () => {
     enabled: true,
   });
 
-  // Filtra os serviços com base na empresa selecionada
-  const companyServices = React.useMemo(() => {
-    if (!selectedCompany || !companiesList) return [];
-    
-    // Encontra a empresa selecionada e retorna seus serviços
-    const company = companiesList.find(c => c.id === selectedCompany);
-    if (!company?.servicos) return [];
-    
-    // Filtra apenas serviços ativos e remove duplicatas
-    const uniqueServices = new Map();
-    company.servicos
-      .filter(service => service?.status)
-      .forEach(service => {
-        if (service?.id && service?.nome) {
-          uniqueServices.set(service.id, service);
-        }
-      });
-    
-    return Array.from(uniqueServices.values());
-  }, [selectedCompany, companiesList]);
+  // Query para buscar serviços da empresa selecionada
+  const { data: companyServices } = useQuery<Service[]>({
+    queryKey: ['company-services', selectedCompany],
+    queryFn: () => companies.getServices(selectedCompany),
+    enabled: !!selectedCompany,
+  });
+
+  // Query para buscar serviços de todas as empresas
+  const { data: allCompanyServices } = useQuery<Service[]>({
+    queryKey: ['all-company-services'],
+    queryFn: async () => {
+      if (!companiesList) return [];
+      const servicesPromises = companiesList.map(company => 
+        companies.getServices(company.id)
+      );
+      const servicesArrays = await Promise.all(servicesPromises);
+      return servicesArrays.flat();
+    },
+    enabled: !!companiesList,
+  });
+
+  // Função para buscar o nome do serviço
+  const getServiceName = (vote: Vote): string => {
+    if (!allCompanyServices) return 'Serviço não especificado';
+    const service = allCompanyServices.find(s => s.id === vote.id_tipo_servico);
+    return service?.nome || 'Serviço não especificado';
+  };
 
   // Reset selectedService quando a empresa muda
   React.useEffect(() => {
@@ -186,6 +201,12 @@ const Votes: React.FC = () => {
     }
   };
 
+  // Função para truncar o texto
+  const truncateText = (text: string, maxLength: number = 20) => {
+    if (text.length <= maxLength) return text;
+    return text.slice(0, maxLength) + '...';
+  };
+
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <Navbar />
@@ -254,12 +275,10 @@ const Votes: React.FC = () => {
                         <SelectValue placeholder="Selecione um serviço" />
                       </SelectTrigger>
                       <SelectContent>
-                        {companyServices.map((service) => (
-                          service?.id && service?.nome ? (
-                            <SelectItem key={service.id} value={service.id}>
-                              {service.nome}
-                            </SelectItem>
-                          ) : null
+                        {companyServices?.map((service) => (
+                          <SelectItem key={service.id} value={service.id}>
+                            {service.nome}
+                          </SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
@@ -313,9 +332,18 @@ const Votes: React.FC = () => {
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-2">
                     <Building2 className="h-4 w-4 text-primary" />
-                    <CardTitle className="text-lg">
-                      {companiesList?.find(c => c.id === vote.id_empresa)?.nome}
-                    </CardTitle>
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <CardTitle className="text-lg">
+                            {truncateText(companiesList?.find(c => c.id === vote.id_empresa)?.nome || '')}
+                          </CardTitle>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>{companiesList?.find(c => c.id === vote.id_empresa)?.nome}</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
                   </div>
                   <Button
                     variant="ghost"
@@ -332,7 +360,7 @@ const Votes: React.FC = () => {
                   <div className="flex items-center space-x-2">
                     <LayoutList className="h-4 w-4 text-muted-foreground" />
                     <span className="text-sm text-muted-foreground">
-                      {vote.serviceType?.nome || 'Serviço não especificado'}
+                      {getServiceName(vote)}
                     </span>
                   </div>
                   <div className="flex items-center space-x-2">

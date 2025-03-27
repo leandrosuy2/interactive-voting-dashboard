@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Pencil, Trash2, Plus, Clock, ChevronDown, ChevronUp, BarChart2 } from 'lucide-react';
+import { Pencil, Trash2, Plus, Clock, ChevronDown, ChevronUp, BarChart2, Building2 } from 'lucide-react';
 import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
 import { companies } from '@/services/api';
 import { useToast } from '@/hooks/use-toast';
@@ -18,6 +18,13 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import { Link } from 'react-router-dom';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { cn } from '@/lib/utils';
 
 interface CompanyCardProps {
   id: string;
@@ -31,6 +38,13 @@ interface CompanyCardProps {
   onEdit: () => void;
   onDelete: () => void;
 }
+
+// Função para truncar o texto
+const truncateText = (text: string, maxLength: number = 20) => {
+  if (!text) return '';
+  if (text.length <= maxLength) return text;
+  return text.slice(0, maxLength) + '...';
+};
 
 const CompanyCard: React.FC<CompanyCardProps> = ({
   id,
@@ -120,8 +134,22 @@ const CompanyCard: React.FC<CompanyCardProps> = ({
       <div className="bg-card rounded-lg border p-4 space-y-4">
         <div className="flex justify-between items-start">
           <div>
-            <h3 className="font-medium text-lg">{nome}</h3>
-            <p className="text-sm text-muted-foreground">{razao_social}</p>
+            <div className="flex items-center space-x-2">
+              <Building2 className="h-4 w-4 text-primary" />
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <h3 className="font-medium text-lg">
+                      {truncateText(nome)}
+                    </h3>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>{nome}</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            </div>
+            <p className="text-sm text-muted-foreground">{truncateText(razao_social)}</p>
           </div>
           <div className="flex items-center gap-1">
             <Button
@@ -165,15 +193,15 @@ const CompanyCard: React.FC<CompanyCardProps> = ({
         <div className="space-y-2 text-sm">
           <div className="flex justify-between">
             <span className="text-muted-foreground">CNPJ:</span>
-            <span className="font-medium">{cnpj}</span>
+            <span className="font-medium">{truncateText(cnpj)}</span>
           </div>
           <div className="flex justify-between">
             <span className="text-muted-foreground">Email:</span>
-            <span className="font-medium">{email}</span>
+            <span className="font-medium">{truncateText(email)}</span>
           </div>
           <div className="flex justify-between">
             <span className="text-muted-foreground">Telefone:</span>
-            <span className="font-medium">{telcom}</span>
+            <span className="font-medium">{truncateText(telcom)}</span>
           </div>
           <div className="flex justify-between">
             <span className="text-muted-foreground">Funcionários:</span>
