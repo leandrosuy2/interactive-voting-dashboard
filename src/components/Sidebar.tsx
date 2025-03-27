@@ -66,11 +66,11 @@ const Sidebar: React.FC = () => {
           path: '/companies',
           icon: Building,
         },
-        {
-          title: 'Serviços',
-          path: '/service-types',
-          icon: LayoutList,
-        },
+        // {
+        //   title: 'Serviços',
+        //   path: '/service-types',
+        //   icon: LayoutList,
+        // },
       ]
     : [
         {

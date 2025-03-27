@@ -68,7 +68,7 @@ const AddCompanyServiceDialog: React.FC<AddCompanyServiceDialogProps> = ({
   }, [service]);
 
   const createServiceMutation = useMutation({
-    mutationFn: (data: CreateCompanyServiceRequest) => 
+    mutationFn: (data: CreateCompanyServiceRequest) =>
       companies.addService(companyId, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['company-services', companyId] });
@@ -89,7 +89,7 @@ const AddCompanyServiceDialog: React.FC<AddCompanyServiceDialogProps> = ({
   });
 
   const updateServiceMutation = useMutation({
-    mutationFn: (data: CreateCompanyServiceRequest) => 
+    mutationFn: (data: CreateCompanyServiceRequest) =>
       companies.updateService(companyId, service!.id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['company-services', companyId] });
@@ -124,7 +124,7 @@ const AddCompanyServiceDialog: React.FC<AddCompanyServiceDialogProps> = ({
         <DialogHeader>
           <DialogTitle>{service ? 'Editar Serviço' : 'Adicionar Serviço'}</DialogTitle>
           <DialogDescription>
-            {service 
+            {service
               ? 'Edite as informações do serviço.'
               : 'Adicione um novo serviço para esta empresa.'}
           </DialogDescription>
@@ -134,7 +134,7 @@ const AddCompanyServiceDialog: React.FC<AddCompanyServiceDialogProps> = ({
             <Label htmlFor="tipo_servico">Tipo de Serviço</Label>
             <Select
               value={formData.tipo_servico}
-              onValueChange={(value) => 
+              onValueChange={(value) =>
                 setFormData({ ...formData, tipo_servico: value })
               }
             >
@@ -142,9 +142,11 @@ const AddCompanyServiceDialog: React.FC<AddCompanyServiceDialogProps> = ({
                 <SelectValue placeholder="Selecione o tipo de serviço" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="1">Serviço 1</SelectItem>
-                <SelectItem value="2">Serviço 2</SelectItem>
-                <SelectItem value="3">Serviço 3</SelectItem>
+                <SelectItem value="1">Desjejum</SelectItem>
+                <SelectItem value="2">Lanche</SelectItem>
+                <SelectItem value="3">Almoço</SelectItem>
+                <SelectItem value="4">Jantar</SelectItem>
+                <SelectItem value="5">Ceia</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -153,7 +155,7 @@ const AddCompanyServiceDialog: React.FC<AddCompanyServiceDialogProps> = ({
             <Input
               id="nome"
               value={formData.nome}
-              onChange={(e) => 
+              onChange={(e) =>
                 setFormData({ ...formData, nome: e.target.value })
               }
               placeholder="Digite o nome do serviço"
@@ -166,7 +168,7 @@ const AddCompanyServiceDialog: React.FC<AddCompanyServiceDialogProps> = ({
                 id="hora_inicio"
                 type="time"
                 value={formData.hora_inicio}
-                onChange={(e) => 
+                onChange={(e) =>
                   setFormData({ ...formData, hora_inicio: e.target.value })
                 }
               />
@@ -177,7 +179,7 @@ const AddCompanyServiceDialog: React.FC<AddCompanyServiceDialogProps> = ({
                 id="hora_final"
                 type="time"
                 value={formData.hora_final}
-                onChange={(e) => 
+                onChange={(e) =>
                   setFormData({ ...formData, hora_final: e.target.value })
                 }
               />
@@ -191,8 +193,8 @@ const AddCompanyServiceDialog: React.FC<AddCompanyServiceDialogProps> = ({
             >
               Cancelar
             </Button>
-            <Button 
-              type="submit" 
+            <Button
+              type="submit"
               disabled={createServiceMutation.isPending || updateServiceMutation.isPending}
             >
               {createServiceMutation.isPending || updateServiceMutation.isPending
