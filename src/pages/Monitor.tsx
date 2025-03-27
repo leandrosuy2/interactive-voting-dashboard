@@ -82,10 +82,15 @@ interface Company {
   id: string;
   name: string;
   servicos: {
-    id_tipo_servico: string;
+    id: string;
+    id_empresa: string;
+    tipo_servico: string;
     nome: string;
     hora_inicio: string;
     hora_final: string;
+    status: boolean;
+    user_add: string;
+    date_add: string;
   }[];
 }
 
@@ -329,6 +334,9 @@ const Monitor: React.FC = () => {
     const currentTime = now.getHours() * 60 + now.getMinutes();
     
     return selectedCompany.servicos.filter(service => {
+      // Primeiro verifica se o serviço está ativo (status true)
+      if (!service.status) return false;
+
       const [startHour, startMinute] = service.hora_inicio.split(':').map(Number);
       const [endHour, endMinute] = service.hora_final.split(':').map(Number);
       
@@ -365,9 +373,9 @@ const Monitor: React.FC = () => {
     // Se o filtro de serviços ativos estiver ativo, filtrar apenas votos dos serviços ativos
     if (activeServicesFilter) {
       const activeServices = getActiveServices();
-      const activeServiceIds = activeServices.map(service => service.tipo_servico);
+      const activeServiceTypes = activeServices.map(service => service.tipo_servico);
       filteredVotes = filteredVotes.filter(vote => 
-        activeServiceIds.includes(vote.id_tipo_servico)
+        activeServiceTypes.includes(vote.id_tipo_servico)
       );
     }
 
@@ -434,6 +442,9 @@ const Monitor: React.FC = () => {
     
     // Verifica se há algum serviço ativo no momento
     const activeService = selectedCompany.servicos.find(service => {
+      // Primeiro verifica se o serviço está ativo (status true)
+      if (!service.status) return false;
+
       const [startHour, startMinute] = service.hora_inicio.split(':').map(Number);
       const [endHour, endMinute] = service.hora_final.split(':').map(Number);
       
@@ -561,7 +572,7 @@ const Monitor: React.FC = () => {
                 <SelectItem value="30d">Últimos 30 dias</SelectItem>
               </SelectContent>
             </Select>
-            <div className="flex items-center space-x-2">
+            {/* <div className="flex items-center space-x-2">
               <input
                 type="checkbox"
                 id="activeServices"
@@ -572,7 +583,7 @@ const Monitor: React.FC = () => {
               <label htmlFor="activeServices" className="text-sm text-muted-foreground">
                 Apenas serviços ativos
               </label>
-            </div>
+            </div> */}
           </div>
         </div>
 
