@@ -51,20 +51,7 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { cn } from '@/lib/utils';
 import VoteFloatingBars from '@/components/VoteFloatingBars';
 import VoteStats from '@/components/VoteStats';
-
-interface Vote {
-  id_voto: string;
-  id_empresa: string;
-  id_tipo_servico: string;
-  avaliacao: string;
-  comentario: string;
-  status: boolean;
-  momento_voto: string;
-  serviceType: {
-    id_tipo_servico: string;
-    nome: string;
-  };
-}
+import { Vote } from '@/types/vote';
 
 interface Analytics {
   totalVotes: number;
@@ -94,6 +81,12 @@ interface Analytics {
 interface Company {
   id: string;
   name: string;
+  servicos: {
+    id_tipo_servico: string;
+    nome: string;
+    hora_inicio: string;
+    hora_final: string;
+  }[];
 }
 
 type TimeRange = '1h' | '24h' | '7d' | '30d';
@@ -111,6 +104,7 @@ const Monitor: React.FC = () => {
     message: string;
     timestamp: Date;
   }>>([]);
+  const [activeServicesFilter, setActiveServicesFilter] = useState<boolean>(true);
 
   // Query para buscar todas as empresas
   const { data: companiesList } = useQuery({
@@ -328,6 +322,23 @@ const Monitor: React.FC = () => {
     }
   };
 
+  const getActiveServices = () => {
+    if (!selectedCompany || !selectedCompany.servicos) return [];
+    
+    const now = new Date();
+    const currentTime = now.getHours() * 60 + now.getMinutes();
+    
+    return selectedCompany.servicos.filter(service => {
+      const [startHour, startMinute] = service.hora_inicio.split(':').map(Number);
+      const [endHour, endMinute] = service.hora_final.split(':').map(Number);
+      
+      const serviceStartTime = startHour * 60 + startMinute;
+      const serviceEndTime = endHour * 60 + endMinute;
+      
+      return currentTime >= serviceStartTime && currentTime <= serviceEndTime;
+    });
+  };
+
   const getFilteredVotes = (votes: Vote[]) => {
     const now = new Date();
     let startDate: Date;
@@ -347,9 +358,20 @@ const Monitor: React.FC = () => {
         break;
     }
 
-    return votes.filter((vote) =>
+    let filteredVotes = votes.filter((vote) =>
       isWithinInterval(new Date(vote.momento_voto), { start: startDate, end: now })
     );
+
+    // Se o filtro de serviços ativos estiver ativo, filtrar apenas votos dos serviços ativos
+    if (activeServicesFilter) {
+      const activeServices = getActiveServices();
+      const activeServiceIds = activeServices.map(service => service.tipo_servico);
+      filteredVotes = filteredVotes.filter(vote => 
+        activeServiceIds.includes(vote.id_tipo_servico)
+      );
+    }
+
+    return filteredVotes;
   };
 
   const getRatingValue = (avaliacao: string): number => {
@@ -402,6 +424,29 @@ const Monitor: React.FC = () => {
       default:
         return null;
     }
+  };
+
+  const getActiveService = () => {
+    if (!selectedCompany || !selectedCompany.servicos) return null;
+    
+    const now = new Date();
+    const currentTime = now.getHours() * 60 + now.getMinutes();
+    
+    // Verifica se há algum serviço ativo no momento
+    const activeService = selectedCompany.servicos.find(service => {
+      const [startHour, startMinute] = service.hora_inicio.split(':').map(Number);
+      const [endHour, endMinute] = service.hora_final.split(':').map(Number);
+      
+      const serviceStartTime = startHour * 60 + startMinute;
+      const serviceEndTime = endHour * 60 + endMinute;
+      
+      return currentTime >= serviceStartTime && currentTime <= serviceEndTime;
+    });
+
+    if (activeService) return { ...activeService, status: 'active' };
+
+    // Se não houver serviço ativo, retorna null para mostrar intervalo
+    return null;
   };
 
   if (!selectedCompanyId) {
@@ -502,6 +547,35 @@ const Monitor: React.FC = () => {
           </div>
         </div>
 
+        {/* Filtros */}
+        <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-8">
+          <div className="flex items-center space-x-4">
+            <Select value={timeRange} onValueChange={(value: TimeRange) => setTimeRange(value)}>
+              <SelectTrigger className="w-[180px]">
+                <SelectValue placeholder="Período" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="1h">Última hora</SelectItem>
+                <SelectItem value="24h">Últimas 24 horas</SelectItem>
+                <SelectItem value="7d">Últimos 7 dias</SelectItem>
+                <SelectItem value="30d">Últimos 30 dias</SelectItem>
+              </SelectContent>
+            </Select>
+            <div className="flex items-center space-x-2">
+              <input
+                type="checkbox"
+                id="activeServices"
+                checked={activeServicesFilter}
+                onChange={(e) => setActiveServicesFilter(e.target.checked)}
+                className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+              />
+              <label htmlFor="activeServices" className="text-sm text-muted-foreground">
+                Apenas serviços ativos
+              </label>
+            </div>
+          </div>
+        </div>
+
         {/* Alertas */}
         {alerts.length > 0 && (
           <div className="mb-8 space-y-4">
@@ -530,6 +604,40 @@ const Monitor: React.FC = () => {
               </Alert>
             ))}
           </div>
+        )}
+
+        {/* Serviço Atual */}
+        {selectedCompany && (
+          <Card className="mb-8 bg-gradient-to-br from-purple-500/5 to-purple-500/10">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Serviço Atual</CardTitle>
+              <Clock className="h-4 w-4 text-purple-500" />
+            </CardHeader>
+            <CardContent>
+              {(() => {
+                const service = getActiveService();
+                if (service) {
+                  return (
+                    <div className="flex items-center space-x-2">
+                      <div className="h-2 w-2 rounded-full bg-purple-500 animate-pulse" />
+                      <span className="text-sm font-medium">{service.nome}</span>
+                      <span className="text-xs text-muted-foreground">
+                        ({service.hora_inicio} - {service.hora_final})
+                      </span>
+                    </div>
+                  );
+                }
+                return (
+                  <div className="flex items-center space-x-2">
+                    <div className="h-2 w-2 rounded-full bg-gray-500" />
+                    <span className="text-sm font-medium text-muted-foreground">
+                      Intervalo
+                    </span>
+                  </div>
+                );
+              })()}
+            </CardContent>
+          </Card>
         )}
 
         {/* Status em tempo real */}
