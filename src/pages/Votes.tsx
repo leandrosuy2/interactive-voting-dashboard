@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/context/AuthContext';
-import { votes, companies, serviceTypes } from '@/services/api';
+import { votes, companies } from '@/services/api';
 import { useToast } from '@/hooks/use-toast';
+import { Company } from '@/types/company';
 import Navbar from '@/components/Navbar';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -40,20 +41,6 @@ import {
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
 
-interface Vote {
-  id_voto: string;
-  id_empresa: string;
-  id_tipo_servico: string;
-  avaliacao: string;
-  comentario: string;
-  status: boolean;
-  momento_voto: string;
-  serviceType: {
-    id_tipo_servico: string;
-    nome: string;
-  };
-}
-
 const Votes: React.FC = () => {
   const { user } = useAuth();
   const { toast } = useToast();
@@ -65,23 +52,42 @@ const Votes: React.FC = () => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
 
   // Queries
-  const { data: companiesList } = useQuery({
+  const { data: companiesList } = useQuery<Company[]>({
     queryKey: ['companies'],
     queryFn: companies.getAll,
   });
 
-  const { data: serviceTypesList } = useQuery({
-    queryKey: ['service-types'],
-    queryFn: serviceTypes.getAll,
-  });
-
   const { data: votesList, refetch } = useQuery({
-    queryKey: ['votes', selectedCompany],
-    queryFn: () => selectedCompany 
-      ? votes.getByCompany(selectedCompany)
-      : votes.getAll(),
+    queryKey: ['votes'],
+    queryFn: votes.getAll,
     enabled: true,
   });
+
+  // Filtra os serviços com base na empresa selecionada
+  const companyServices = React.useMemo(() => {
+    if (!selectedCompany || !companiesList) return [];
+    
+    // Encontra a empresa selecionada e retorna seus serviços
+    const company = companiesList.find(c => c.id === selectedCompany);
+    console.log('Serviços da empresa:', company?.servicos);
+    
+    // Filtra apenas serviços ativos e remove duplicatas
+    const uniqueServices = new Map();
+    company?.servicos
+      .filter(service => service.status)
+      .forEach(service => {
+        uniqueServices.set(service.id, service);
+      });
+    
+    const services = Array.from(uniqueServices.values());
+    console.log('Serviços filtrados:', services);
+    return services;
+  }, [selectedCompany, companiesList]);
+
+  // Reset selectedService quando a empresa muda
+  React.useEffect(() => {
+    setSelectedService('');
+  }, [selectedCompany]);
 
   // Mutations
   const createVoteMutation = useMutation({
@@ -238,12 +244,16 @@ const Votes: React.FC = () => {
                   </div>
                   <div className="space-y-2">
                     <label className="text-sm font-medium">Serviço</label>
-                    <Select value={selectedService} onValueChange={setSelectedService}>
+                    <Select 
+                      value={selectedService} 
+                      onValueChange={setSelectedService}
+                      disabled={!selectedCompany}
+                    >
                       <SelectTrigger>
                         <SelectValue placeholder="Selecione um serviço" />
                       </SelectTrigger>
                       <SelectContent>
-                        {serviceTypesList?.map((service) => (
+                        {companyServices.map((service) => (
                           <SelectItem key={service.id} value={service.id}>
                             {service.nome}
                           </SelectItem>
