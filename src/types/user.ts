@@ -87,10 +87,44 @@ export interface CreateUserRequest {
   setor?: string;
   image?: string;
   perfil_acesso: string;
-  empresas: string[]; // IDs das empresas
+  empresas?: {
+    id_empresa: string;
+    nome_empresa: string;
+    status: boolean;
+  }[];
 }
 
 export interface UpdateUserRequest {
+  username?: string;
+  password?: string;
+  email?: string;
+  nome?: string;
+  cargo?: string;
+  telcel?: string;
+  setor?: string;
+  image?: string;
+  perfil_acesso?: string;
+  empresas?: {
+    id_empresa: string;
+    nome_empresa: string;
+    status: boolean;
+  }[];
+}
+
+export interface UserFormData {
+  username: string;
+  password: string;
+  email: string;
+  nome: string;
+  cargo: string;
+  telcel?: string;
+  setor?: string;
+  image?: string;
+  perfil_acesso: string;
+  empresas: string[]; // IDs das empresas
+}
+
+export interface UserFormDataUpdate {
   username?: string;
   password?: string;
   email?: string;

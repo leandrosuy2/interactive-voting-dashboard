@@ -68,13 +68,17 @@ export const auth = {
 // Users APIs
 export const users = {
   getAll: () => api.get('/users').then((response) => response.data),
-  getById: (id: string) => api.get(`/users/${id}`).then((response) => response.data),
+  getById: (id: string) => api.get(`/users/${id}?include=empresas`).then((response) => response.data),
   getByUsername: (username: string) =>
     api.get(`/users/username/${username}`).then((response) => response.data),
   create: (data: CreateUserRequest) =>
     api.post('/users', data).then((response) => response.data),
-  update: (id: string, data: UpdateUserRequest) =>
-    api.put(`/users/${id}`, data).then((response) => response.data),
+  update: async (id: string, data: UpdateUserRequest) => {
+    console.log('Chamando API de atualização:', { id, data });
+    const response = await api.put(`/users/${id}`, data);
+    console.log('Resposta da API:', response.data);
+    return response.data;
+  },
   delete: (id: string) => api.delete(`/users/${id}`).then((response) => response.data),
   getAccessProfiles: () => api.get('/users/access-profiles').then((response) => response.data),
   getPermissions: async (userId: string): Promise<Permission[]> => {
@@ -86,6 +90,14 @@ export const users = {
       permission,
       has_permission
     });
+    return response.data;
+  },
+  linkToCompany: async (userId: string, companyId: string) => {
+    const response = await api.post(`/companies/${companyId}/users/${userId}`);
+    return response.data;
+  },
+  unlinkFromCompany: async (userId: string, companyId: string) => {
+    const response = await api.delete(`/companies/${companyId}/users/${userId}`);
     return response.data;
   },
 };

@@ -109,7 +109,7 @@ const Monitor: React.FC = () => {
     message: string;
     timestamp: Date;
   }>>([]);
-  const [activeServicesFilter, setActiveServicesFilter] = useState<boolean>(true);
+  const [activeServicesFilter, setActiveServicesFilter] = useState<boolean>(false);
 
   // Query para buscar todas as empresas
   const { data: companiesList } = useQuery({

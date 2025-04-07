@@ -33,7 +33,7 @@ import { useToast } from '@/components/ui/use-toast';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import * as z from 'zod';
-import { User, CreateUserRequest, UpdateUserRequest } from '@/types/user';
+import { User, CreateUserRequest, UpdateUserRequest, UserFormData, UserFormDataUpdate } from '@/types/user';
 import { users, companies } from '@/services/api';
 import Navbar from '@/components/Navbar';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -71,7 +71,7 @@ export default function Users() {
   const [userPermissions, setUserPermissions] = useState<Permission[]>([]);
   const [loadingPermissions, setLoadingPermissions] = useState(false);
 
-  const { data: usersList, isLoading } = useQuery({
+  const { data: usersList, isLoading: isLoadingUsers } = useQuery({
     queryKey: ['users'],
     queryFn: users.getAll,
   });
@@ -81,7 +81,7 @@ export default function Users() {
     queryFn: () => users.getAccessProfiles(),
   });
 
-  const { data: companiesList } = useQuery({
+  const { data: companiesList, isLoading: isLoadingCompanies } = useQuery({
     queryKey: ['companies'],
     queryFn: companies.getAll,
   });
@@ -106,9 +106,12 @@ export default function Users() {
   });
 
   const updateUserMutation = useMutation({
-    mutationFn: ({ id, data }: { id: string; data: UpdateUserRequest }) =>
-      users.update(id, data),
+    mutationFn: ({ id, data }: { id: string; data: UpdateUserRequest }) => {
+      console.log('Executando mutação de atualização:', { id, data });
+      return users.update(id, data);
+    },
     onSuccess: () => {
+      console.log('Mutação executada com sucesso');
       queryClient.invalidateQueries({ queryKey: ['users'] });
       setIsEditDialogOpen(false);
       setSelectedUser(null);
@@ -118,6 +121,7 @@ export default function Users() {
       });
     },
     onError: (error: any) => {
+      console.error('Erro na mutação:', error);
       toast({
         title: 'Erro',
         description: error.response?.data?.message || 'Erro ao atualizar usuário',
@@ -144,7 +148,7 @@ export default function Users() {
     },
   });
 
-  const form = useForm<CreateUserRequest>({
+  const form = useForm<UserFormData>({
     resolver: zodResolver(userSchema),
     defaultValues: {
       username: '',
@@ -160,7 +164,7 @@ export default function Users() {
     },
   });
 
-  const updateForm = useForm<UpdateUserRequest>({
+  const updateForm = useForm<UserFormDataUpdate>({
     resolver: zodResolver(updateUserSchema),
     defaultValues: {
       username: '',
@@ -175,13 +179,108 @@ export default function Users() {
     },
   });
 
-  const onSubmit = (data: CreateUserRequest) => {
-    createUserMutation.mutate(data);
+  const onSubmit = async (data: UserFormData) => {
+    try {
+      console.log('Dados do usuário a serem criados:', data);
+      console.log('Empresas selecionadas:', data.empresas);
+
+      // Primeiro, cria o usuário com os dados básicos
+      const userData = {
+        username: data.username,
+        password: data.password,
+        email: data.email,
+        nome: data.nome,
+        cargo: data.cargo,
+        telcel: data.telcel,
+        setor: data.setor,
+        image: data.image,
+        perfil_acesso: data.perfil_acesso,
+      };
+
+      console.log('Dados formatados para o backend:', userData);
+      
+      // Cria o usuário
+      const newUser = await users.create(userData);
+      
+      // Depois, vincula o usuário às empresas
+      if (data.empresas && data.empresas.length > 0) {
+        for (const companyId of data.empresas) {
+          await users.linkToCompany(newUser.id, companyId);
+        }
+      }
+      
+      toast({
+        title: "Sucesso",
+        description: "Usuário criado com sucesso",
+      });
+      
+      setIsCreateDialogOpen(false);
+      form.reset();
+      refetchUsers();
+    } catch (error) {
+      console.error('Erro ao criar usuário:', error);
+      toast({
+        title: "Erro",
+        description: "Erro ao criar usuário",
+        variant: "destructive",
+      });
+    }
   };
 
-  const onUpdate = (data: UpdateUserRequest) => {
-    if (selectedUser) {
-      updateUserMutation.mutate({ id: selectedUser.id, data });
+  const onUpdate = async (data: UserFormDataUpdate) => {
+    try {
+      console.log('Dados do usuário a serem atualizados:', data);
+      console.log('Empresas selecionadas:', data.empresas);
+
+      // Primeiro, atualiza os dados básicos do usuário
+      const userData = {
+        username: data.username,
+        email: data.email,
+        nome: data.nome,
+        cargo: data.cargo,
+        telcel: data.telcel,
+        setor: data.setor,
+        image: data.image,
+        perfil_acesso: data.perfil_acesso,
+      };
+
+      console.log('Dados formatados para o backend:', userData);
+      
+      if (!selectedUser) return;
+      
+      // Atualiza os dados do usuário
+      await users.update(selectedUser.id, userData);
+      
+      // Depois, atualiza os vínculos com as empresas
+      if (data.empresas && data.empresas.length > 0) {
+        // Primeiro, remove todos os vínculos existentes
+        const existingCompanies = selectedUser.empresas || [];
+        for (const company of existingCompanies) {
+          await users.unlinkFromCompany(selectedUser.id, company.id);
+        }
+        
+        // Depois, cria os novos vínculos
+        for (const companyId of data.empresas) {
+          await users.linkToCompany(selectedUser.id, companyId);
+        }
+      }
+      
+      toast({
+        title: "Sucesso",
+        description: "Usuário atualizado com sucesso",
+      });
+      
+      setIsEditDialogOpen(false);
+      updateForm.reset();
+      setSelectedUser(null);
+      refetchUsers();
+    } catch (error) {
+      console.error('Erro ao atualizar usuário:', error);
+      toast({
+        title: "Erro",
+        description: "Erro ao atualizar usuário",
+        variant: "destructive",
+      });
     }
   };
 
@@ -197,6 +296,26 @@ export default function Users() {
       const permissions = await users.getPermissions(user.id);
       setUserPermissions(permissions);
       setSelectedUser(user);
+      
+      console.log('Usuário selecionado para edição:', user);
+      console.log('Empresas do usuário:', user.empresas);
+      
+      // Inicializa o formulário com os dados do usuário
+      const formData = {
+        username: user.username,
+        email: user.email,
+        nome: user.nome,
+        cargo: user.cargo,
+        telcel: user.telcel || '',
+        setor: user.setor || '',
+        image: user.image || '',
+        perfil_acesso: user.perfil_acesso,
+        empresas: user.empresas.map(empresa => empresa.id)
+      };
+      
+      console.log('Dados do formulário:', formData);
+      updateForm.reset(formData);
+      
       setIsEditDialogOpen(true);
     } catch (error) {
       console.error('Erro ao carregar permissões:', error);
@@ -228,7 +347,11 @@ export default function Users() {
     });
   };
 
-  if (isLoading) {
+  const refetchUsers = () => {
+    queryClient.invalidateQueries({ queryKey: ['users'] });
+  };
+
+  if (isLoadingUsers || isLoadingCompanies) {
     return (
       <div className="min-h-screen bg-background flex flex-col">
         <Navbar />
@@ -470,12 +593,16 @@ export default function Users() {
                                   const selectedOptions = Array.from(e.target.selectedOptions).map(
                                     (option) => option.value
                                   );
+                                  console.log('Empresas selecionadas:', selectedOptions);
                                   field.onChange(selectedOptions);
                                 }}
                                 className="flex h-32 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                               >
                                 {companiesList?.map((company) => (
-                                  <option key={company.id} value={company.id}>
+                                  <option 
+                                    key={company.id} 
+                                    value={company.id}
+                                  >
                                     {company.nome}
                                   </option>
                                 ))}
@@ -566,7 +693,10 @@ export default function Users() {
                 <TabsTrigger value="permissoes">Permissões</TabsTrigger>
               </TabsList>
               <Form {...updateForm}>
-                <form onSubmit={updateForm.handleSubmit(onUpdate)} className="space-y-4 mt-4">
+                <form onSubmit={(e) => {
+                  console.log('Formulário submetido');
+                  updateForm.handleSubmit(onUpdate)(e);
+                }} className="space-y-4 mt-4">
                   <TabsContent value="dados-pessoais">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <FormField
@@ -650,41 +780,44 @@ export default function Users() {
                       <FormField
                         control={updateForm.control}
                         name="empresas"
-                        render={({ field }) => (
-                          <FormItem className="col-span-full">
-                            <FormLabel>Empresas</FormLabel>
-                            <FormControl>
-                              <select
-                                multiple
-                                {...field}
-                                value={field.value || []}
-                                onChange={(e) => {
-                                  const selectedOptions = Array.from(e.target.selectedOptions).map(
-                                    (option) => option.value
-                                  );
-                                  field.onChange(selectedOptions);
-                                }}
-                                className="flex h-32 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                              >
-                                {companiesList?.map((company) => (
-                                  <option key={company.id} value={company.id}>
-                                    {company.nome}
-                                  </option>
-                                ))}
-                              </select>
-                            </FormControl>
-                            <FormDescription>
-                              Segure CTRL (Windows) ou Command (Mac) para selecionar múltiplas empresas
-                            </FormDescription>
-                            <FormMessage />
-                          </FormItem>
-                        )}
+                        render={({ field }) => {
+                          console.log('Field value:', field.value);
+                          console.log('Companies list:', companiesList);
+                          return (
+                            <FormItem className="col-span-full">
+                              <FormLabel>Empresas</FormLabel>
+                              <FormControl>
+                                <select
+                                  multiple
+                                  {...field}
+                                  value={field.value || []}
+                                  onChange={(e) => {
+                                    const selectedOptions = Array.from(e.target.selectedOptions).map(
+                                      (option) => option.value
+                                    );
+                                    console.log('Empresas selecionadas:', selectedOptions);
+                                    field.onChange(selectedOptions);
+                                  }}
+                                  className="flex h-32 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                                >
+                                  {companiesList?.map((company) => (
+                                    <option 
+                                      key={company.id} 
+                                      value={company.id}
+                                    >
+                                      {company.nome}
+                                    </option>
+                                  ))}
+                                </select>
+                              </FormControl>
+                              <FormDescription>
+                                Segure CTRL (Windows) ou Command (Mac) para selecionar múltiplas empresas
+                              </FormDescription>
+                              <FormMessage />
+                            </FormItem>
+                          );
+                        }}
                       />
-                    </div>
-                    <div className="flex justify-end pt-4">
-                      <Button type="submit" className="w-full md:w-auto">
-                        Atualizar Usuário
-                      </Button>
                     </div>
                   </TabsContent>
                   <TabsContent value="acesso">
@@ -739,12 +872,12 @@ export default function Users() {
                         )}
                       />
                     </div>
-                    <div className="flex justify-end pt-4">
-                      <Button type="submit" className="w-full md:w-auto">
-                        Atualizar Usuário
-                      </Button>
-                    </div>
                   </TabsContent>
+                  <div className="flex justify-end pt-4">
+                    <Button type="submit" className="w-full md:w-auto">
+                      Atualizar Usuário
+                    </Button>
+                  </div>
                 </form>
               </Form>
               <TabsContent value="permissoes" className="space-y-4">
