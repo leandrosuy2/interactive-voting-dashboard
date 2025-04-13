@@ -10,7 +10,8 @@ import {
   Activity,
   Monitor,
   ThumbsUp,
-  Users
+  Users,
+  FileText
 } from 'lucide-react';
 import { useTheme } from '@/context/ThemeContext';
 import ThemeToggle from './ThemeToggle';
@@ -71,6 +72,11 @@ const Sidebar: React.FC = () => {
           title: 'Usuários',
           path: '/users',
           icon: Users,
+        },
+        {
+          title: 'Relatórios',
+          path: '/reports',
+          icon: FileText,
         },
         // {
         //   title: 'Serviços',

@@ -126,7 +126,7 @@ const VoteFloatingBars: React.FC<VoteFloatingBarsProps> = ({ votes, height = 300
           label: (context: any) => {
             const vote = sortedVotes[context.dataIndex];
             return [
-              `Serviço: ${vote.serviceType.nome}`,
+              `Serviço: ${vote.serviceType?.nome}`,
               `Avaliação: ${vote.avaliacao}`,
               `Horário: ${format(new Date(vote.momento_voto), "dd 'de' MMMM 'às' HH:mm", { locale: ptBR })}`,
             ];

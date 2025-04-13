@@ -16,6 +16,7 @@ import Companies from "./pages/Companies";
 import ServiceTypes from "./pages/ServiceTypes";
 import Votes from "./pages/Votes";
 import Users from "./pages/Users";
+import Reports from "./pages/Reports";
 import NotFound from "./pages/NotFound";
 import ProtectedRoute from "./components/ProtectedRoute";
 
@@ -58,6 +59,7 @@ const AppContent = () => {
                   <Route path="/companies" element={<ProtectedRoute><Companies /></ProtectedRoute>} />
                   <Route path="/service-types" element={<ProtectedRoute><ServiceTypes /></ProtectedRoute>} />
                   <Route path="/users" element={<ProtectedRoute><Users /></ProtectedRoute>} />
+                  <Route path="/reports" element={<ProtectedRoute><Reports /></ProtectedRoute>} />
                   <Route path="*" element={<Navigate to="/dashboard" replace />} />
                 </Routes>
               </div>

@@ -253,7 +253,23 @@ const Monitor: React.FC = () => {
     newSocket.emit('joinCompanyRoom', selectedCompanyId);
 
     newSocket.on('voteUpdate', (updatedAnalytics: Analytics) => {
-      setAnalytics(updatedAnalytics);
+      setAnalytics(prevAnalytics => {
+        if (!prevAnalytics) return updatedAnalytics;
+
+        // Mantém o histórico de votos, limitando a 100 votos mais recentes
+        const combinedRecentVotes = [
+          ...updatedAnalytics.recentVotes,
+          ...prevAnalytics.recentVotes.filter(vote => 
+            !updatedAnalytics.recentVotes.some(newVote => newVote.id_voto === vote.id_voto)
+          )
+        ].slice(0, 100);
+
+        return {
+          ...updatedAnalytics,
+          recentVotes: combinedRecentVotes
+        };
+      });
+
       checkAlerts(updatedAnalytics);
       toast({
         title: 'Novo voto recebido!',
