@@ -8,14 +8,14 @@ import { useToast } from '@/hooks/use-toast';
 import Navbar from '@/components/Navbar';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { 
-  RefreshCw, 
-  TrendingUp, 
-  Users, 
-  Star, 
-  Building2, 
-  AlertTriangle, 
-  Clock, 
+import {
+  RefreshCw,
+  TrendingUp,
+  Users,
+  Star,
+  Building2,
+  AlertTriangle,
+  Clock,
   Activity,
   LineChart,
   BarChart3,
@@ -110,12 +110,27 @@ const Monitor: React.FC = () => {
     timestamp: Date;
   }>>([]);
   const [activeServicesFilter, setActiveServicesFilter] = useState<boolean>(false);
+  const [activeService, setActiveService] = useState<{
+    id: string;
+    id_empresa: string;
+    tipo_servico: string;
+    nome: string;
+    hora_inicio: string;
+    hora_final: string;
+    status: boolean;
+    user_add: string;
+    date_add: string;
+  } | null>(null);
 
   // Query para buscar todas as empresas
   const { data: companiesList } = useQuery({
     queryKey: ['companies'],
     queryFn: companies.getAll,
   });
+
+  const selectedCompany = companiesList?.find(
+    (company) => company.id === selectedCompanyId
+  );
 
   // Query para buscar dados iniciais
   const { data: initialAnalytics, refetch } = useQuery({
@@ -135,7 +150,7 @@ const Monitor: React.FC = () => {
           }), {}),
         };
       }
-      
+
       // Se não houver empresa selecionada, buscar dados de todas as empresas
       const allCompanies = await companies.getAll();
       const allAnalytics = await Promise.all(
@@ -173,10 +188,10 @@ const Monitor: React.FC = () => {
             };
           }
           combinedAnalytics.votesByService[service].total += data.total;
-          
+
           // Combinar avaliações por tipo para cada serviço
           Object.entries(data.avaliacoes).forEach(([tipo, count]) => {
-            combinedAnalytics.votesByService[service].avaliacoes[tipo] = 
+            combinedAnalytics.votesByService[service].avaliacoes[tipo] =
               (combinedAnalytics.votesByService[service].avaliacoes[tipo] || 0) + count;
           });
 
@@ -189,7 +204,7 @@ const Monitor: React.FC = () => {
 
       // Calcular médias e percentuais
       combinedAnalytics.averageRating = calculateAverageRating(combinedAnalytics.avaliacoesPorTipo);
-      
+
       // Calcular percentuais por tipo
       Object.entries(combinedAnalytics.avaliacoesPorTipo).forEach(([tipo, count]) => {
         combinedAnalytics.percentuaisPorTipo[tipo] = (count / combinedAnalytics.totalVotes) * 100;
@@ -199,7 +214,7 @@ const Monitor: React.FC = () => {
       Object.keys(combinedAnalytics.votesByService).forEach(service => {
         const serviceData = combinedAnalytics.votesByService[service];
         serviceData.average = calculateAverageRating(serviceData.avaliacoes);
-        
+
         // Calcular percentuais por tipo para cada serviço
         Object.entries(serviceData.avaliacoes).forEach(([tipo, count]) => {
           serviceData.percentuais[tipo] = (count / serviceData.total) * 100;
@@ -207,7 +222,7 @@ const Monitor: React.FC = () => {
       });
 
       // Ordenar votos recentes por data
-      combinedAnalytics.recentVotes.sort((a, b) => 
+      combinedAnalytics.recentVotes.sort((a, b) =>
         new Date(b.momento_voto).getTime() - new Date(a.momento_voto).getTime()
       );
 
@@ -259,7 +274,7 @@ const Monitor: React.FC = () => {
         // Mantém o histórico de votos, limitando a 100 votos mais recentes
         const combinedRecentVotes = [
           ...updatedAnalytics.recentVotes,
-          ...prevAnalytics.recentVotes.filter(vote => 
+          ...prevAnalytics.recentVotes.filter(vote =>
             !updatedAnalytics.recentVotes.some(newVote => newVote.id_voto === vote.id_voto)
           )
         ].slice(0, 100);
@@ -276,7 +291,7 @@ const Monitor: React.FC = () => {
         description: 'Os dados foram atualizados em tempo real.',
       });
     });
-    
+
     return () => {
       newSocket.emit('leaveCompanyRoom', selectedCompanyId);
       newSocket.disconnect();
@@ -345,20 +360,20 @@ const Monitor: React.FC = () => {
 
   const getActiveServices = () => {
     if (!selectedCompany || !selectedCompany.servicos) return [];
-    
+
     const now = new Date();
     const currentTime = now.getHours() * 60 + now.getMinutes();
-    
+
     return selectedCompany.servicos.filter(service => {
       // Primeiro verifica se o serviço está ativo (status true)
       if (!service.status) return false;
 
       const [startHour, startMinute] = service.hora_inicio.split(':').map(Number);
       const [endHour, endMinute] = service.hora_final.split(':').map(Number);
-      
+
       const serviceStartTime = startHour * 60 + startMinute;
       const serviceEndTime = endHour * 60 + endMinute;
-      
+
       return currentTime >= serviceStartTime && currentTime <= serviceEndTime;
     });
   };
@@ -390,7 +405,7 @@ const Monitor: React.FC = () => {
     if (activeServicesFilter) {
       const activeServices = getActiveServices();
       const activeServiceTypes = activeServices.map(service => service.tipo_servico);
-      filteredVotes = filteredVotes.filter(vote => 
+      filteredVotes = filteredVotes.filter(vote =>
         activeServiceTypes.includes(vote.id_tipo_servico)
       );
     }
@@ -450,30 +465,40 @@ const Monitor: React.FC = () => {
     }
   };
 
+  // Efeito para verificar o serviço ativo periodicamente
+  useEffect(() => {
+    const checkActiveService = () => {
+      if (!selectedCompany || !selectedCompany.servicos) return;
+
+      const now = new Date();
+      const currentTime = now.getHours() * 60 + now.getMinutes();
+
+      const activeService = selectedCompany.servicos.find(service => {
+        if (!service.status) return false;
+
+        const [startHour, startMinute] = service.hora_inicio.split(':').map(Number);
+        const [endHour, endMinute] = service.hora_final.split(':').map(Number);
+
+        const serviceStartTime = startHour * 60 + startMinute;
+        const serviceEndTime = endHour * 60 + endMinute;
+
+        return currentTime >= serviceStartTime && currentTime <= serviceEndTime;
+      });
+
+      setActiveService(activeService || null);
+    };
+
+    // Verificar imediatamente
+    checkActiveService();
+
+    // Configurar intervalo para verificar a cada minuto
+    const interval = setInterval(checkActiveService, 60000);
+
+    return () => clearInterval(interval);
+  }, [selectedCompany]);
+
   const getActiveService = () => {
-    if (!selectedCompany || !selectedCompany.servicos) return null;
-    
-    const now = new Date();
-    const currentTime = now.getHours() * 60 + now.getMinutes();
-    
-    // Verifica se há algum serviço ativo no momento
-    const activeService = selectedCompany.servicos.find(service => {
-      // Primeiro verifica se o serviço está ativo (status true)
-      if (!service.status) return false;
-
-      const [startHour, startMinute] = service.hora_inicio.split(':').map(Number);
-      const [endHour, endMinute] = service.hora_final.split(':').map(Number);
-      
-      const serviceStartTime = startHour * 60 + startMinute;
-      const serviceEndTime = endHour * 60 + endMinute;
-      
-      return currentTime >= serviceStartTime && currentTime <= serviceEndTime;
-    });
-
-    if (activeService) return { ...activeService, status: 'active' };
-
-    // Se não houver serviço ativo, retorna null para mostrar intervalo
-    return null;
+    return activeService;
   };
 
   if (!selectedCompanyId) {
@@ -504,9 +529,9 @@ const Monitor: React.FC = () => {
       </div>
     );
   }
-  
+
   if (!analytics) {
-  return (
+    return (
       <div className="min-h-screen bg-background flex flex-col">
         <Navbar />
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-24">
@@ -517,10 +542,6 @@ const Monitor: React.FC = () => {
       </div>
     );
   }
-
-  const selectedCompany = companiesList?.find(
-    (company) => company.id === selectedCompanyId
-  );
 
   const filteredVotes = getFilteredVotes(analytics.recentVotes);
   const votesInRange = filteredVotes.length;
@@ -539,7 +560,7 @@ const Monitor: React.FC = () => {
               <div>
                 <h1 className="text-3xl font-bold tracking-tight">Monitor</h1>
                 <p className="text-muted-foreground">
-                  {selectedCompanyId 
+                  {selectedCompanyId
                     ? `Monitoramento de ${companiesList?.find(c => c.id === selectedCompanyId)?.nome}`
                     : 'Monitoramento Geral'}
                 </p>
@@ -607,14 +628,14 @@ const Monitor: React.FC = () => {
         {alerts.length > 0 && (
           <div className="mb-8 space-y-4">
             {alerts.map((alert, index) => (
-              <Alert 
-                key={index} 
+              <Alert
+                key={index}
                 variant={alert.type === 'error' ? 'destructive' : 'default'}
                 className={cn(
                   "border-l-4",
-                  alert.type === 'error' ? "border-red-500" : 
-                  alert.type === 'warning' ? "border-yellow-500" : 
-                  "border-green-500"
+                  alert.type === 'error' ? "border-red-500" :
+                    alert.type === 'warning' ? "border-yellow-500" :
+                      "border-green-500"
                 )}
               >
                 {alert.type === 'error' ? (
@@ -684,7 +705,7 @@ const Monitor: React.FC = () => {
               </p>
             </CardContent>
           </Card>
-          
+
           <Card className="bg-gradient-to-br from-blue-500/5 to-blue-500/10">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Votos no período</CardTitle>
@@ -713,7 +734,7 @@ const Monitor: React.FC = () => {
               />
             </CardContent>
           </Card>
-          
+
           <Card className="bg-gradient-to-br from-green-500/5 to-green-500/10">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Tendência</CardTitle>
@@ -739,7 +760,7 @@ const Monitor: React.FC = () => {
             </CardContent>
           </Card>
         </div>
-        
+
         {/* Estatísticas de Votos */}
         <Card className="mt-8 bg-gradient-to-br from-primary/5 to-primary/10">
           <CardHeader>
