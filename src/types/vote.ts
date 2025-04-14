@@ -1,36 +1,55 @@
 export interface Vote {
   id_voto: string;
   id_empresa: string;
-  id_tipo_servico: string;
-  avaliacao: string;
-  comentario: string;
+  id_tipo_servico: string | null;
+  avaliacao: 'Ótimo' | 'Bom' | 'Regular' | 'Ruim';
+  comentario: string | null;
   status: boolean;
   momento_voto: string;
-  serviceType: {
-    id_tipo_servico: string;
-    nome: string;
+  updated_at: string;
+}
+
+export interface ServiceInfo {
+  nome: string;
+  tipo_servico: string;
+  hora_inicio: string;
+  hora_final: string;
+}
+
+export interface ServiceVotes {
+  total: number;
+  avaliacoes: {
+    Ótimo: number;
+    Bom: number;
+    Regular: number;
+    Ruim: number;
   };
+  percentuais: {
+    Ótimo: number;
+    Bom: number;
+    Regular: number;
+    Ruim: number;
+  };
+  votes: Vote[];
+  serviceInfo: ServiceInfo | null;
 }
 
 export interface VoteAnalytics {
   totalVotes: number;
   avaliacoesPorTipo: {
-    [key: string]: number;
+    Ótimo: number;
+    Bom: number;
+    Regular: number;
+    Ruim: number;
   };
   percentuaisPorTipo: {
-    [key: string]: number;
+    Ótimo: number;
+    Bom: number;
+    Regular: number;
+    Ruim: number;
   };
   votesByService: {
-    [key: string]: {
-      total: number;
-      avaliacoes: {
-        [key: string]: number;
-      };
-      percentuais: {
-        [key: string]: number;
-      };
-      votes: Vote[];
-    };
+    [key: string]: ServiceVotes;
   };
   recentVotes: Vote[];
 }

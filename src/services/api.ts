@@ -224,8 +224,17 @@ export const votes = {
       throw error;
     }
   },
-  getAnalytics: async (companyId: string): Promise<VoteAnalytics> => {
-    const response = await api.get(`/votes/analytics/${companyId}`);
+  getAnalytics: async (companyId: string, filters?: { 
+    startDate?: string; 
+    endDate?: string; 
+    quickFilter?: string;
+  }): Promise<VoteAnalytics> => {
+    const params = new URLSearchParams();
+    if (filters?.startDate) params.append('startDate', filters.startDate);
+    if (filters?.endDate) params.append('endDate', filters.endDate);
+    if (filters?.quickFilter) params.append('quickFilter', filters.quickFilter);
+    
+    const response = await api.get(`/votes/analytics/${companyId}?${params.toString()}`);
     return response.data;
   },
   getById: async (id: string) => {
