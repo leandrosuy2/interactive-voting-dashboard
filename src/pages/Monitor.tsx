@@ -401,13 +401,14 @@ const Monitor: React.FC = () => {
       isWithinInterval(new Date(vote.momento_voto), { start: startDate, end: now })
     );
 
-    // Se o filtro de serviços ativos estiver ativo, filtrar apenas votos dos serviços ativos
-    if (activeServicesFilter) {
-      const activeServices = getActiveServices();
-      const activeServiceTypes = activeServices.map(service => service.tipo_servico);
-      filteredVotes = filteredVotes.filter(vote =>
-        activeServiceTypes.includes(vote.id_tipo_servico)
+    // Se houver um serviço ativo, filtrar apenas os votos desse serviço
+    if (activeService) {
+      filteredVotes = filteredVotes.filter(vote => 
+        vote.id_tipo_servico === activeService.tipo_servico
       );
+    } else {
+      // Se estiver em intervalo, não mostrar nenhum voto
+      filteredVotes = [];
     }
 
     return filteredVotes;
@@ -465,6 +466,22 @@ const Monitor: React.FC = () => {
     }
   };
 
+  // Função para limpar votos
+  const clearVotes = () => {
+    setAnalytics(prevAnalytics => {
+      if (!prevAnalytics) return null;
+      return {
+        ...prevAnalytics,
+        totalVotes: 0,
+        averageRating: 0,
+        avaliacoesPorTipo: {},
+        percentuaisPorTipo: {},
+        votesByService: {},
+        recentVotes: []
+      };
+    });
+  };
+
   // Efeito para verificar o serviço ativo periodicamente
   useEffect(() => {
     const checkActiveService = () => {
@@ -484,6 +501,11 @@ const Monitor: React.FC = () => {
 
         return currentTime >= serviceStartTime && currentTime <= serviceEndTime;
       });
+
+      // Se não houver serviço ativo (intervalo), limpar os votos
+      if (!activeService) {
+        clearVotes();
+      }
 
       setActiveService(activeService || null);
     };
