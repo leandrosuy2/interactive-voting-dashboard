@@ -458,13 +458,52 @@ const Monitor: React.FC = () => {
     });
   };
 
+  // const getFilteredVotes = (votes: Vote[]) => {
+  //   if (!votes || votes.length === 0) return [];
+    
+  //   // Encontra a data mais recente dos votos
+  //   const latestVoteDate = new Date(Math.max(...votes.map(v => new Date(v.momento_voto).getTime())));
+  //   let startDate: Date;
+
+  //   switch (timeRange) {
+  //     case '1h':
+  //       startDate = subHours(latestVoteDate, 1);
+  //       break;
+  //     case '24h':
+  //       startDate = subHours(latestVoteDate, 24);
+  //       break;
+  //     case '7d':
+  //       startDate = subDays(latestVoteDate, 7);
+  //       break;
+  //     case '30d':
+  //       startDate = subDays(latestVoteDate, 30);
+  //       break;
+  //   }
+
+  //   // Se houver um serviço ativo, usa os votos desse serviço
+  //   if (activeService && analytics?.votesByService[activeService.id]) {
+  //     let serviceVotes = analytics.votesByService[activeService.id].votes;
+      
+  //     // Filtra por intervalo de tempo
+  //     return serviceVotes.filter((vote) =>
+  //       isWithinInterval(new Date(vote.momento_voto), { start: startDate, end: latestVoteDate })
+  //     );
+  //   }
+
+  //   // Se não houver serviço ativo, filtra todos os votos por tempo
+  //   return votes.filter((vote) =>
+  //     isWithinInterval(new Date(vote.momento_voto), { start: startDate, end: latestVoteDate })
+  //   );
+  // };
   const getFilteredVotes = (votes: Vote[]) => {
     if (!votes || votes.length === 0) return [];
-    
-    // Encontra a data mais recente dos votos
+  
+    // 🔒 Se estiver em intervalo, retorna zero votos
+    if (!activeService) return [];
+  
     const latestVoteDate = new Date(Math.max(...votes.map(v => new Date(v.momento_voto).getTime())));
     let startDate: Date;
-
+  
     switch (timeRange) {
       case '1h':
         startDate = subHours(latestVoteDate, 1);
@@ -479,20 +518,14 @@ const Monitor: React.FC = () => {
         startDate = subDays(latestVoteDate, 30);
         break;
     }
-
-    // Se houver um serviço ativo, usa os votos desse serviço
-    if (activeService && analytics?.votesByService[activeService.id]) {
-      let serviceVotes = analytics.votesByService[activeService.id].votes;
-      
-      // Filtra por intervalo de tempo
-      return serviceVotes.filter((vote) =>
-        isWithinInterval(new Date(vote.momento_voto), { start: startDate, end: latestVoteDate })
-      );
-    }
-
-    // Se não houver serviço ativo, filtra todos os votos por tempo
-    return votes.filter((vote) =>
-      isWithinInterval(new Date(vote.momento_voto), { start: startDate, end: latestVoteDate })
+  
+    const serviceVotes = analytics?.votesByService[activeService.id]?.votes || [];
+  
+    return serviceVotes.filter((vote) =>
+      isWithinInterval(new Date(vote.momento_voto), {
+        start: startDate,
+        end: latestVoteDate,
+      })
     );
   };
 
