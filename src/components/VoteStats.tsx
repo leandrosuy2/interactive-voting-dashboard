@@ -12,10 +12,20 @@ const VoteStats: React.FC<VoteStatsProps> = ({ votes }) => {
   console.log('VoteStats received votes:', votes);
   console.log('VoteStats votes length:', votes.length);
   console.log('VoteStats votes types:', votes.map(v => v.avaliacao));
+  console.log('VoteStats votes details:', votes.map(v => ({
+    avaliacao: v.avaliacao,
+    momento_voto: v.momento_voto,
+    id_tipo_servico: v.id_tipo_servico
+  })));
 
   useEffect(() => {
     console.log('VoteStats votes changed:', votes);
     console.log('VoteStats votes changed length:', votes.length);
+    console.log('VoteStats votes changed details:', votes.map(v => ({
+      avaliacao: v.avaliacao,
+      momento_voto: v.momento_voto,
+      id_tipo_servico: v.id_tipo_servico
+    })));
   }, [votes]);
 
   const getRatingValue = (avaliacao: string): number => {
