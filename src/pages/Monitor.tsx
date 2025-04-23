@@ -51,7 +51,7 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { cn } from '@/lib/utils';
 import VoteFloatingBars from '@/components/VoteFloatingBars';
 import VoteStats from '@/components/VoteStats';
-import { Vote } from '@/types/vote';
+import { Vote, VoteAnalytics } from '@/types/vote';
 
 interface Analytics {
   totalVotes: number;
@@ -133,29 +133,52 @@ const Monitor: React.FC = () => {
   );
 
   // Query para buscar dados iniciais
-  const { data: initialAnalytics, refetch } = useQuery({
+  const { data: initialAnalytics, refetch, isError, error } = useQuery({
     queryKey: ['analytics', selectedCompanyId],
     queryFn: async () => {
       if (selectedCompanyId) {
-        const data = await votes.getAnalytics(selectedCompanyId);
-        return {
-          ...data,
-          averageRating: calculateAverageRating(data.avaliacoesPorTipo),
-          votesByService: Object.entries(data.votesByService).reduce((acc, [key, value]) => ({
-            ...acc,
-            [key]: {
-              ...value,
-              average: calculateAverageRating(value.avaliacoes),
-            },
-          }), {}),
-        };
+        try {
+          const data = await votes.getAnalytics(selectedCompanyId);
+          if (!data) {
+            throw new Error('Nenhum dado retornado da API');
+          }
+          return {
+            ...data,
+            averageRating: calculateAverageRating(data.avaliacoesPorTipo),
+            votesByService: Object.entries(data.votesByService).reduce((acc, [key, value]) => ({
+              ...acc,
+              [key]: {
+                ...value,
+                average: calculateAverageRating(value.avaliacoes),
+              },
+            }), {}),
+          };
+        } catch (error) {
+          console.error('Error fetching analytics:', error);
+          toast({
+            title: 'Erro ao carregar dados',
+            description: error instanceof Error ? error.message : 'Erro desconhecido',
+            variant: 'destructive',
+          });
+          throw error;
+        }
       }
 
       // Se não houver empresa selecionada, buscar dados de todas as empresas
       const allCompanies = await companies.getAll();
       const allAnalytics = await Promise.all(
-        allCompanies.map(company => votes.getAnalytics(company.id))
+        allCompanies.map(async company => {
+          try {
+            return await votes.getAnalytics(company.id);
+          } catch (error) {
+            console.error(`Error fetching analytics for company ${company.id}:`, error);
+            return null;
+          }
+        })
       );
+
+      // Filter out failed requests and ensure type safety
+      const validAnalytics = allAnalytics.filter((data): data is VoteAnalytics => data !== null);
 
       // Combinar os dados de todas as empresas
       const combinedAnalytics: Analytics = {
@@ -167,7 +190,7 @@ const Monitor: React.FC = () => {
         recentVotes: [],
       };
 
-      allAnalytics.forEach(companyAnalytics => {
+      validAnalytics.forEach(companyAnalytics => {
         // Somar total de votos
         combinedAnalytics.totalVotes += companyAnalytics.totalVotes;
 
@@ -187,15 +210,25 @@ const Monitor: React.FC = () => {
               votes: [],
             };
           }
-          combinedAnalytics.votesByService[service].total += data.total;
+
+          const serviceData = combinedAnalytics.votesByService[service];
+          const typedServiceData = data as {
+            total: number;
+            avaliacoes: { [key: string]: number };
+            votes: Vote[];
+          };
+
+          serviceData.total += typedServiceData.total;
 
           // Combinar avaliações por tipo para cada serviço
-          Object.entries(data.avaliacoes).forEach(([tipo, count]) => {
-            combinedAnalytics.votesByService[service].avaliacoes[tipo] =
-              (combinedAnalytics.votesByService[service].avaliacoes[tipo] || 0) + count;
+          Object.entries(typedServiceData.avaliacoes).forEach(([tipo, count]) => {
+            if (!serviceData.avaliacoes[tipo]) {
+              serviceData.avaliacoes[tipo] = 0;
+            }
+            serviceData.avaliacoes[tipo] += count;
           });
 
-          combinedAnalytics.votesByService[service].votes.push(...data.votes);
+          serviceData.votes.push(...typedServiceData.votes);
         });
 
         // Adicionar votos recentes
@@ -229,6 +262,9 @@ const Monitor: React.FC = () => {
       return combinedAnalytics;
     },
     enabled: true,
+    refetchInterval: 30000, // Refetch every 30 seconds
+    refetchOnWindowFocus: true,
+    staleTime: 10000, // Consider data stale after 10 seconds
   });
 
   const calculateAverageRating = (avaliacoes: { [key: string]: number }) => {
@@ -251,13 +287,6 @@ const Monitor: React.FC = () => {
     return totalWeight > 0 ? weightedSum / totalWeight : 0;
   };
 
-  useEffect(() => {
-    if (initialAnalytics) {
-      setAnalytics(initialAnalytics);
-      checkAlerts(initialAnalytics);
-    }
-  }, [initialAnalytics]);
-
   // Configuração do WebSocket
   useEffect(() => {
     if (!selectedCompanyId) return;
@@ -267,28 +296,62 @@ const Monitor: React.FC = () => {
 
     newSocket.emit('joinCompanyRoom', selectedCompanyId);
 
-    newSocket.on('voteUpdate', (updatedAnalytics: Analytics) => {
+    newSocket.on('voteUpdate', async (updatedVote: Vote) => {
+      // Update analytics state immediately
       setAnalytics(prevAnalytics => {
-        if (!prevAnalytics) return updatedAnalytics;
+        if (!prevAnalytics) return null;
+        
+        // Atualiza os votos recentes
+        const updatedRecentVotes = [updatedVote, ...prevAnalytics.recentVotes];
+        
+        // Atualiza as avaliações por tipo
+        const updatedAvaliacoesPorTipo = {
+          ...prevAnalytics.avaliacoesPorTipo,
+          [updatedVote.avaliacao]: (prevAnalytics.avaliacoesPorTipo[updatedVote.avaliacao] || 0) + 1
+        };
 
-        // Mantém o histórico de votos, limitando a 100 votos mais recentes
-        const combinedRecentVotes = [
-          ...updatedAnalytics.recentVotes,
-          ...prevAnalytics.recentVotes.filter(vote =>
-            !updatedAnalytics.recentVotes.some(newVote => newVote.id_voto === vote.id_voto)
-          )
-        ].slice(0, 100);
+        // Atualiza os votos por serviço
+        const updatedVotesByService = { ...prevAnalytics.votesByService };
+        if (updatedVote.id_tipo_servico) {
+          const serviceKey = updatedVote.id_tipo_servico;
+          if (!updatedVotesByService[serviceKey]) {
+            updatedVotesByService[serviceKey] = {
+              total: 0,
+              average: 0,
+              avaliacoes: {},
+              percentuais: {},
+              votes: []
+            };
+          }
+          
+          const serviceData = updatedVotesByService[serviceKey];
+          serviceData.total += 1;
+          serviceData.votes = [updatedVote, ...serviceData.votes];
+          serviceData.avaliacoes = {
+            ...serviceData.avaliacoes,
+            [updatedVote.avaliacao]: (serviceData.avaliacoes[updatedVote.avaliacao] || 0) + 1
+          };
+        }
 
+        console.log('Updating analytics with new vote:', updatedVote);
+        
         return {
-          ...updatedAnalytics,
-          recentVotes: combinedRecentVotes
+          ...prevAnalytics,
+          recentVotes: updatedRecentVotes,
+          totalVotes: prevAnalytics.totalVotes + 1,
+          avaliacoesPorTipo: updatedAvaliacoesPorTipo,
+          votesByService: updatedVotesByService
         };
       });
 
-      checkAlerts(updatedAnalytics);
+      // Refetch to get fresh data
+      await refetch();
+      
+      // Show toast notification
       toast({
         title: 'Novo voto recebido!',
-        description: 'Os dados foram atualizados em tempo real.',
+        description: 'Os dados foram atualizados.',
+        variant: 'default',
       });
     });
 
@@ -296,7 +359,24 @@ const Monitor: React.FC = () => {
       newSocket.emit('leaveCompanyRoom', selectedCompanyId);
       newSocket.disconnect();
     };
-  }, [selectedCompanyId, toast]);
+  }, [selectedCompanyId, toast, refetch]);
+
+  // Update analytics state when initialAnalytics changes
+  useEffect(() => {
+    if (initialAnalytics) {
+      setAnalytics(initialAnalytics);
+      checkAlerts(initialAnalytics);
+    }
+  }, [initialAnalytics]);
+
+  // Refetch data periodically
+  useEffect(() => {
+    const interval = setInterval(() => {
+      refetch();
+    }, 10000); // Refetch every 10 seconds
+
+    return () => clearInterval(interval);
+  }, [refetch]);
 
   const checkAlerts = (data: Analytics) => {
     const newAlerts = [];
@@ -378,40 +458,75 @@ const Monitor: React.FC = () => {
     });
   };
 
-  const getFilteredVotes = (votes: Vote[]) => {
-    const now = new Date();
-    let startDate: Date;
+  // const getFilteredVotes = (votes: Vote[]) => {
+  //   if (!votes || votes.length === 0) return [];
+    
+  //   // Encontra a data mais recente dos votos
+  //   const latestVoteDate = new Date(Math.max(...votes.map(v => new Date(v.momento_voto).getTime())));
+  //   let startDate: Date;
 
+  //   switch (timeRange) {
+  //     case '1h':
+  //       startDate = subHours(latestVoteDate, 1);
+  //       break;
+  //     case '24h':
+  //       startDate = subHours(latestVoteDate, 24);
+  //       break;
+  //     case '7d':
+  //       startDate = subDays(latestVoteDate, 7);
+  //       break;
+  //     case '30d':
+  //       startDate = subDays(latestVoteDate, 30);
+  //       break;
+  //   }
+
+  //   // Se houver um serviço ativo, usa os votos desse serviço
+  //   if (activeService && analytics?.votesByService[activeService.id]) {
+  //     let serviceVotes = analytics.votesByService[activeService.id].votes;
+      
+  //     // Filtra por intervalo de tempo
+  //     return serviceVotes.filter((vote) =>
+  //       isWithinInterval(new Date(vote.momento_voto), { start: startDate, end: latestVoteDate })
+  //     );
+  //   }
+
+  //   // Se não houver serviço ativo, filtra todos os votos por tempo
+  //   return votes.filter((vote) =>
+  //     isWithinInterval(new Date(vote.momento_voto), { start: startDate, end: latestVoteDate })
+  //   );
+  // };
+  const getFilteredVotes = (votes: Vote[]) => {
+    if (!votes || votes.length === 0) return [];
+  
+    // 🔒 Se estiver em intervalo, retorna zero votos
+    if (!activeService) return [];
+  
+    const latestVoteDate = new Date(Math.max(...votes.map(v => new Date(v.momento_voto).getTime())));
+    let startDate: Date;
+  
     switch (timeRange) {
       case '1h':
-        startDate = subHours(now, 1);
+        startDate = subHours(latestVoteDate, 1);
         break;
       case '24h':
-        startDate = subHours(now, 24);
+        startDate = subHours(latestVoteDate, 24);
         break;
       case '7d':
-        startDate = subDays(now, 7);
+        startDate = subDays(latestVoteDate, 7);
         break;
       case '30d':
-        startDate = subDays(now, 30);
+        startDate = subDays(latestVoteDate, 30);
         break;
     }
-
-    let filteredVotes = votes.filter((vote) =>
-      isWithinInterval(new Date(vote.momento_voto), { start: startDate, end: now })
+  
+    const serviceVotes = analytics?.votesByService[activeService.id]?.votes || [];
+  
+    return serviceVotes.filter((vote) =>
+      isWithinInterval(new Date(vote.momento_voto), {
+        start: startDate,
+        end: latestVoteDate,
+      })
     );
-
-    // Se houver um serviço ativo, filtrar apenas os votos desse serviço
-    if (activeService) {
-      filteredVotes = filteredVotes.filter(vote => 
-        vote.id_tipo_servico === activeService.tipo_servico
-      );
-    } else {
-      // Se estiver em intervalo, não mostrar nenhum voto
-      filteredVotes = [];
-    }
-
-    return filteredVotes;
   };
 
   const getRatingValue = (avaliacao: string): number => {
@@ -470,14 +585,14 @@ const Monitor: React.FC = () => {
   const clearVotes = () => {
     setAnalytics(prevAnalytics => {
       if (!prevAnalytics) return null;
+      
+      // Reset the analytics to show all votes when in interval
       return {
         ...prevAnalytics,
-        totalVotes: 0,
-        averageRating: 0,
-        avaliacoesPorTipo: {},
-        percentuaisPorTipo: {},
-        votesByService: {},
-        recentVotes: []
+        recentVotes: prevAnalytics.recentVotes,
+        totalVotes: prevAnalytics.totalVotes,
+        avaliacoesPorTipo: prevAnalytics.avaliacoesPorTipo,
+        votesByService: prevAnalytics.votesByService
       };
     });
   };
@@ -502,12 +617,13 @@ const Monitor: React.FC = () => {
         return currentTime >= serviceStartTime && currentTime <= serviceEndTime;
       });
 
-      // Se não houver serviço ativo (intervalo), limpar os votos
+      // Update active service state
+      setActiveService(activeService || null);
+
+      // If there's no active service (interval), show all votes
       if (!activeService) {
         clearVotes();
       }
-
-      setActiveService(activeService || null);
     };
 
     // Verificar imediatamente
@@ -522,6 +638,27 @@ const Monitor: React.FC = () => {
   const getActiveService = () => {
     return activeService;
   };
+
+  if (isError) {
+    return (
+      <div className="min-h-screen bg-background flex flex-col">
+        <Navbar />
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-24">
+          <div className="flex flex-col items-center justify-center space-y-4">
+            <AlertTriangle className="h-12 w-12 text-destructive" />
+            <h2 className="text-2xl font-semibold">Erro ao carregar dados</h2>
+            <p className="text-muted-foreground">
+              {error instanceof Error ? error.message : 'Ocorreu um erro ao carregar os dados. Por favor, tente novamente.'}
+            </p>
+            <Button onClick={() => refetch()} variant="outline" className="gap-2">
+              <RefreshCw className="h-4 w-4" />
+              Tentar novamente
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   if (!selectedCompanyId) {
     return (

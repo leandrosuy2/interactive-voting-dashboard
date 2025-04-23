@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Vote } from '@/types/vote';
 import { Card, CardContent } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
@@ -9,6 +9,25 @@ interface VoteStatsProps {
 }
 
 const VoteStats: React.FC<VoteStatsProps> = ({ votes }) => {
+  console.log('VoteStats received votes:', votes);
+  console.log('VoteStats votes length:', votes.length);
+  console.log('VoteStats votes types:', votes.map(v => v.avaliacao));
+  console.log('VoteStats votes details:', votes.map(v => ({
+    avaliacao: v.avaliacao,
+    momento_voto: v.momento_voto,
+    id_tipo_servico: v.id_tipo_servico
+  })));
+
+  useEffect(() => {
+    console.log('VoteStats votes changed:', votes);
+    console.log('VoteStats votes changed length:', votes.length);
+    console.log('VoteStats votes changed details:', votes.map(v => ({
+      avaliacao: v.avaliacao,
+      momento_voto: v.momento_voto,
+      id_tipo_servico: v.id_tipo_servico
+    })));
+  }, [votes]);
+
   const getRatingValue = (avaliacao: string): number => {
     switch (avaliacao) {
       case 'Ótimo':
@@ -47,6 +66,8 @@ const VoteStats: React.FC<VoteStatsProps> = ({ votes }) => {
     ruim: votes.filter(v => v.avaliacao === 'Ruim').length,
   };
 
+  console.log('Calculated stats:', stats);
+
   const satisfactionRate = stats.total > 0
     ? ((stats.otimo + stats.bom) / stats.total) * 100
     : 0;
@@ -54,6 +75,11 @@ const VoteStats: React.FC<VoteStatsProps> = ({ votes }) => {
   const averageRating = stats.total > 0
     ? votes.reduce((acc, vote) => acc + getRatingValue(vote.avaliacao), 0) / stats.total
     : 0;
+
+  console.log('Calculated rates:', {
+    satisfactionRate,
+    averageRating
+  });
 
   const getPercentage = (value: number) => {
     return stats.total > 0 ? (value / stats.total) * 100 : 0;

@@ -50,39 +50,39 @@ const Sidebar: React.FC = () => {
     ? [
         {
           title: 'Dashboard',
+          icon: Home,
           path: '/dashboard',
-          icon: BarChart3,
         },
         {
           title: 'Monitor',
-          path: '/monitor',
           icon: Monitor,
-        },
-        {
-          title: 'Votos',
-          path: '/votes',
-          icon: ThumbsUp,
+          path: '/monitor',
         },
         {
           title: 'Empresas',
-          path: '/companies',
           icon: Building,
+          path: '/companies',
+        },
+        {
+          title: 'Tipos de Serviço',
+          icon: LayoutList,
+          path: '/service-types',
+        },
+        {
+          title: 'Votos',
+          icon: ThumbsUp,
+          path: '/votes',
         },
         {
           title: 'Usuários',
-          path: '/users',
           icon: Users,
+          path: '/users',
         },
         {
           title: 'Relatórios',
-          path: '/reports',
           icon: FileText,
+          path: '/relatorios',
         },
-        // {
-        //   title: 'Serviços',
-        //   path: '/service-types',
-        //   icon: LayoutList,
-        // },
       ]
     : [
         {

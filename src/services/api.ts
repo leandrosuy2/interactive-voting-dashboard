@@ -224,16 +224,52 @@ export const votes = {
       throw error;
     }
   },
-  getAnalytics: async (companyId: string): Promise<VoteAnalytics> => {
-    const response = await api.get(`/votes/analytics/${companyId}`);
-    return response.data;
+  getAnalytics: async (companyId: string, filters?: { 
+    startDate?: string; 
+    endDate?: string; 
+    quickFilter?: string;
+  }): Promise<VoteAnalytics> => {
+    try {
+      const params = new URLSearchParams();
+      if (filters?.startDate) params.append('startDate', filters.startDate);
+      if (filters?.endDate) params.append('endDate', filters.endDate);
+      if (filters?.quickFilter) params.append('quickFilter', filters.quickFilter);
+      
+      const response = await api.get(`/votes/analytics/${companyId}?${params.toString()}`);
+      
+      if (!response.data) {
+        throw new Error('Nenhum dado retornado da API');
+      }
+      
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching analytics:', error);
+      if (axios.isAxiosError(error)) {
+        if (error.response?.status === 401) {
+          throw new Error('Não autorizado. Por favor, faça login novamente.');
+        }
+        throw new Error(error.response?.data?.message || 'Falha ao buscar análises');
+      }
+      throw error;
+    }
+  },
+  getByCompany: async (id_empresa: string): Promise<Vote[]> => {
+    try {
+      const response = await api.get(`/votes/empresa/${id_empresa}`);
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching company votes:', error);
+      if (axios.isAxiosError(error)) {
+        if (error.response?.status === 401) {
+          throw new Error('Não autorizado. Por favor, faça login novamente.');
+        }
+        throw new Error(error.response?.data?.message || 'Falha ao buscar votos da empresa');
+      }
+      throw error;
+    }
   },
   getById: async (id: string) => {
     const response = await api.get(`/votes/${id}`);
-    return response.data;
-  },
-  getByCompany: async (id_empresa: string) => {
-    const response = await api.get(`/votes/empresa/${id_empresa}`);
     return response.data;
   },
   getByServiceType: async (id_tipo_servico: string) => {
