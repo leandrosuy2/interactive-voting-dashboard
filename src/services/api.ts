@@ -63,6 +63,10 @@ export const auth = {
     const response = await api.post('/auth/register', userData);
     return response.data;
   },
+  getUserPermissions: async (userId: string) => {
+    const response = await api.get(`/users/${userId}/permissions`);
+    return response.data;
+  }
 };
 
 // Users APIs

@@ -32,7 +32,7 @@ import {
 import { Button } from '@/components/ui/button';
 
 const Sidebar: React.FC = () => {
-  const { isAuthenticated, logout, user } = useAuth();
+  const { isAuthenticated, logout, user, hasPermission } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
   const { theme } = useTheme();
@@ -52,38 +52,45 @@ const Sidebar: React.FC = () => {
           title: 'Dashboard',
           icon: Home,
           path: '/dashboard',
+          permission: 'dashboard'
         },
         {
           title: 'Monitor',
           icon: Monitor,
           path: '/monitor',
+          permission: 'gestao'
         },
         {
           title: 'Empresas',
           icon: Building,
           path: '/companies',
+          permission: 'cadastros'
         },
         {
           title: 'Tipos de Serviço',
           icon: LayoutList,
           path: '/service-types',
+          permission: 'cadastros'
         },
         {
           title: 'Votos',
           icon: ThumbsUp,
           path: '/votes',
+          permission: 'pesquisas'
         },
         {
           title: 'Usuários',
           icon: Users,
           path: '/users',
+          permission: 'autorizacoes'
         },
         {
           title: 'Relatórios',
           icon: FileText,
           path: '/relatorios',
+          permission: 'relatorios'
         },
-      ]
+      ].filter(item => hasPermission(item.permission))
     : [
         {
           title: 'Home',

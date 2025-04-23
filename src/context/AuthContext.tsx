@@ -3,11 +3,19 @@ import { useNavigate } from 'react-router-dom';
 import { auth } from '@/services/api';
 import { toast } from 'sonner';
 
+interface Permission {
+  id: string;
+  permission: string;
+  has_permission: boolean;
+  user_id: string;
+}
+
 interface User {
   id: string;
   username: string;
   nome: string;
   perfil: string;
+  permissions?: Permission[];
 }
 
 interface AuthContextType {
@@ -16,8 +24,16 @@ interface AuthContextType {
   isAuthenticated: boolean;
   isLoading: boolean;
   login: (username: string, password: string) => Promise<void>;
-  register: (userData: { username: string; password: string; email: string; name: string }) => Promise<void>;
+  register: (userData: { 
+    username: string; 
+    password: string; 
+    email: string; 
+    nome: string;
+    cargo: string;
+    perfil_acesso: string;
+  }) => Promise<void>;
   logout: () => void;
+  hasPermission: (permission: string) => boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -31,7 +47,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   // Initialize auth state from localStorage
   useEffect(() => {
-    const initializeAuth = () => {
+    const initializeAuth = async () => {
       const storedToken = localStorage.getItem('token');
       const storedUser = localStorage.getItem('user');
       
@@ -41,8 +57,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           setToken(storedToken);
           setUser(parsedUser);
           setIsAuthenticated(true);
+          
+          // Fetch user permissions
+          const permissions = await auth.getUserPermissions(parsedUser.id);
+          setUser(prev => prev ? { ...prev, permissions } : null);
         } catch (error) {
-          console.error('Error parsing stored user:', error);
+          console.error('Error initializing auth:', error);
           localStorage.removeItem('token');
           localStorage.removeItem('user');
         }
@@ -69,6 +89,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setUser(user);
       setIsAuthenticated(true);
       
+      // Get user permissions after setting the token
+      const permissions = await auth.getUserPermissions(user.id);
+      setUser(prev => prev ? { ...prev, permissions } : null);
+      
       toast.success('Login realizado com sucesso!');
       navigate('/dashboard', { replace: true });
     } catch (error) {
@@ -80,7 +104,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const register = async (userData: { username: string; password: string; email: string; name: string }) => {
+  const register = async (userData: { 
+    username: string; 
+    password: string; 
+    email: string; 
+    nome: string;
+    cargo: string;
+    perfil_acesso: string;
+  }) => {
     try {
       setIsLoading(true);
       await auth.register(userData);
@@ -109,6 +140,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     navigate('/login', { replace: true });
   };
 
+  const hasPermission = (permission: string): boolean => {
+    if (!user?.permissions) return false;
+    const userPermission = user.permissions.find(p => p.permission === permission);
+    return userPermission?.has_permission || false;
+  };
+
   const value = {
     user,
     token,
@@ -116,7 +153,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     isLoading,
     login,
     register,
-    logout
+    logout,
+    hasPermission
   };
 
   return (
