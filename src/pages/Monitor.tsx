@@ -262,7 +262,7 @@ const Monitor: React.FC = () => {
   useEffect(() => {
     if (!selectedCompanyId) return;
 
-    const newSocket = io('http://localhost:3005');
+    const newSocket = io('https://api.vvrefeicoes.com.br');
     setSocket(newSocket);
 
     newSocket.emit('joinCompanyRoom', selectedCompanyId);

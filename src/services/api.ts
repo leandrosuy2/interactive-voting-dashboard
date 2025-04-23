@@ -7,7 +7,7 @@ import { Permission } from '../types/permission';
 import { Service } from '../types/service';
 
 // Create an axios instance with base configurations
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3005';
+const API_URL = import.meta.env.VITE_API_URL || 'https://api.vvrefeicoes.com.br';
 const api = axios.create({
   baseURL: API_URL,
   headers: {
