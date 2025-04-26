@@ -10,6 +10,7 @@ import { useToast } from '@/hooks/use-toast';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { Company } from '@/types/company';
+import InputMask from 'react-input-mask';
 import {
   Select,
   SelectContent,
@@ -28,6 +29,24 @@ interface AddCompanyDialogProps {
 interface Line {
   value: number;
   label: string;
+}
+
+async function fetchAddress(cep: string) {
+  const cleanedCep = cep.replace(/\D/g, '');
+  if (cleanedCep.length !== 8) {
+    return null;
+  }
+  try {
+    const response = await fetch(`https://viacep.com.br/ws/${cleanedCep}/json/`);
+    const data = await response.json();
+    if (data.erro) {
+      return null;
+    }
+    return data;
+  } catch (error) {
+    console.error('Erro ao buscar CEP:', error);
+    return null;
+  }
 }
 
 const AddCompanyDialog: React.FC<AddCompanyDialogProps> = ({
@@ -176,6 +195,32 @@ const AddCompanyDialog: React.FC<AddCompanyDialogProps> = ({
       createMutation.mutate(dataToSubmit);
     }
   };
+  const handleCepChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const rawCep = e.target.value;
+    const formattedCep = rawCep.replace(/\D/g, '').replace(/(\d{5})(\d)/, '$1-$2').slice(0, 9);
+    const cleanedCep = formattedCep.replace(/\D/g, '');
+  
+    setFormData((prev) => ({ ...prev, cep: formattedCep }));
+  
+    if (cleanedCep.length === 8) {
+      const address = await fetchAddress(cleanedCep);
+      if (address) {
+        setFormData((prev) => ({
+          ...prev,
+          rua: address.logradouro || '',
+          bairro: address.bairro || '',
+          cidade: address.localidade || '',
+          estado: address.uf || '',
+        }));
+      } else {
+        toast({
+          title: "CEP não encontrado",
+          description: "Verifique se o CEP digitado está correto.",
+          variant: "destructive",
+        });
+      }
+    }
+  };
 
   const steps = [
     {
@@ -203,15 +248,17 @@ const AddCompanyDialog: React.FC<AddCompanyDialogProps> = ({
           </div>
           <div className="space-y-2">
             <Label htmlFor="cnpj">CNPJ</Label>
-            <Input
-              id="cnpj"
+             {/* No campo de CNPJ */}
+            <InputMask
+              mask="99.999.999/9999-99"
               value={formData.cnpj}
               onChange={(e) => setFormData({ ...formData, cnpj: e.target.value })}
-              required
-            />
+            >
+              {(inputProps) => <Input {...inputProps} id="cnpj" required />}
+            </InputMask>
           </div>
           <div className="space-y-2">
-            <Label htmlFor="qt_funcionarios">Quantidade de Funcionários</Label>
+            <Label htmlFor="qt_funcionarios">Quantidade de Refeiçoes</Label>
             <Input
               id="qt_funcionarios"
               type="number"
@@ -261,26 +308,29 @@ const AddCompanyDialog: React.FC<AddCompanyDialogProps> = ({
               required
             />
           </div>
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="telcom">Telefone Comercial</Label>
-              <Input
-                id="telcom"
-                value={formData.telcom}
-                onChange={(e) => setFormData({ ...formData, telcom: e.target.value })}
-                required
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="telcel">Telefone Celular</Label>
-              <Input
-                id="telcel"
-                value={formData.telcel}
-                onChange={(e) => setFormData({ ...formData, telcel: e.target.value })}
-                required
-              />
-            </div>
+          {/* // Dentro do seu JSX */}
+        <div className="grid grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <Label htmlFor="telcom">Telefone Comercial</Label>
+            <InputMask
+              mask="(99) 99999-9999"
+              value={formData.telcom}
+              onChange={(e) => setFormData({ ...formData, telcom: e.target.value })}
+            >
+              {(inputProps) => <Input {...inputProps} id="telcom" required />}
+            </InputMask>
           </div>
+          <div className="space-y-2">
+            <Label htmlFor="telcel">Telefone Celular</Label>
+            <InputMask
+              mask="(99) 99999-9999"
+              value={formData.telcel}
+              onChange={(e) => setFormData({ ...formData, telcel: e.target.value })}
+            >
+              {(inputProps) => <Input {...inputProps} id="telcel" required />}
+            </InputMask>
+          </div>
+        </div>
         </div>
       ),
     },
@@ -294,7 +344,7 @@ const AddCompanyDialog: React.FC<AddCompanyDialogProps> = ({
             <Input
               id="cep"
               value={formData.cep}
-              onChange={(e) => setFormData({ ...formData, cep: e.target.value })}
+              onChange={handleCepChange}
               required
             />
           </div>
