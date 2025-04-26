@@ -11,13 +11,7 @@ import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { Company } from '@/types/company';
 import InputMask from 'react-input-mask';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
 
 interface AddCompanyDialogProps {
   open: boolean;
@@ -269,26 +263,14 @@ const AddCompanyDialog: React.FC<AddCompanyDialogProps> = ({
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="linha">Linha</Label>
-            <Select
-              value={formData.linha.toString()}
-              onValueChange={(value) => setFormData({ ...formData, linha: Number(value) })}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Selecione a linha" />
-              </SelectTrigger>
-              <SelectContent>
-                {lines?.map((line: Line) => (
-                  <SelectItem 
-                    key={line.value} 
-                    value={line.value.toString()}
-                    disabled={!line.value && line.value !== 0}
-                  >
-                    {line.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <div className="flex items-center space-x-2">
+              <Checkbox
+                id="linha"
+                checked={formData.linha === 1}
+                onCheckedChange={(checked) => setFormData({ ...formData, linha: checked ? 1 : 0 })}
+              />
+              <Label htmlFor="linha">Linha</Label>
+            </div>
           </div>
         </div>
       ),

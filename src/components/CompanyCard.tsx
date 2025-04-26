@@ -223,10 +223,10 @@ const CompanyCard: React.FC<CompanyCardProps> = ({
             <span className="text-muted-foreground">Funcionários:</span>
             <span className="font-medium">{qt_funcionarios.toString()}</span>
           </div>
-          <div className="flex justify-between">
+          {/* <div className="flex justify-between">
             <span className="text-muted-foreground">Linha:</span>
             <span className="font-medium">{getLineLabel(linha)}</span>
-          </div>
+          </div> */}
         </div>
 
         <div className="pt-4 border-t">
