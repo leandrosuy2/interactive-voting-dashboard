@@ -4,6 +4,8 @@ import { format, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { Plus, Pencil, Trash2, Search, RefreshCw, Users as UsersIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import InputMask from 'react-input-mask';
+
 import {
   Table,
   TableBody,
@@ -540,19 +542,25 @@ export default function Users() {
                         )}
                       />
                       <FormField
-                        control={form.control}
-                        name="telcel"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Telefone Celular</FormLabel>
-                            <FormControl>
-                              <Input {...field} />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      <FormField
+                          control={form.control}
+                          name="telcel"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Telefone Celular</FormLabel>
+                              <FormControl>
+                                <InputMask
+                                  mask="(99) 99999-9999"
+                                  value={field.value || ''}
+                                  onChange={field.onChange}
+                                >
+                                  {(inputProps: any) => <Input {...inputProps} />}
+                                </InputMask>
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      {/* <FormField
                         control={form.control}
                         name="setor"
                         render={({ field }) => (
@@ -564,7 +572,7 @@ export default function Users() {
                             <FormMessage />
                           </FormItem>
                         )}
-                      />
+                      /> */}
                       <FormField
                         control={form.control}
                         name="image"

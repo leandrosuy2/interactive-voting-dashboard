@@ -18,6 +18,11 @@ import {
   ClipboardList,
   Key,
   BarChart,
+  Building,
+  LayoutList,
+  ThumbsUp,
+  
+  Monitor,
   Calendar,
   PieChart,
   Download
@@ -52,7 +57,13 @@ const PERMISSION_CATEGORIES: PermissionCategory[] = [
     name: 'Menu Principal',
     icon: <LayoutDashboard className="h-4 w-4" />,
     permissions: [
-      { key: 'dashboard', label: 'Dashboard', icon: <BarChart className="h-4 w-4" /> }
+      { key: 'dashboard', label: 'Dashboard', icon: <BarChart className="h-4 w-4" /> },
+      { key: 'gestao', label: 'Monitor', icon: <Monitor className="h-4 w-4" /> },
+  { key: 'cadastros_companies', label: 'Empresas', icon: <Building className="h-4 w-4" /> },
+  { key: 'cadastros_service_types', label: 'Tipos de Serviço', icon: <LayoutList className="h-4 w-4" /> },
+  { key: 'pesquisas_votes', label: 'Votos', icon: <ThumbsUp className="h-4 w-4" /> },
+  { key: 'autorizacoes_users', label: 'Usuários', icon: <Users className="h-4 w-4" /> },
+  { key: 'relatorios', label: 'Relatórios', icon: <FileText className="h-4 w-4" /> },
     ]
   },
   {

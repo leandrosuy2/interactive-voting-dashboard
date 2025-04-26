@@ -46,6 +46,21 @@ const truncateText = (text: string, maxLength: number = 20) => {
   return text.slice(0, maxLength) + '...';
 };
 
+const formatCNPJ = (cnpj: string) => {
+  const cleaned = cnpj.replace(/\D/g, '');
+  return cleaned.replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})$/, '$1.$2.$3/$4-$5');
+};
+
+const formatPhone = (phone: string) => {
+  const cleaned = phone.replace(/\D/g, '');
+  if (cleaned.length === 11) {
+    return cleaned.replace(/^(\d{2})(\d{5})(\d{4})$/, '($1) $2-$3');
+  } else if (cleaned.length === 10) {
+    return cleaned.replace(/^(\d{2})(\d{4})(\d{4})$/, '($1) $2-$3');
+  }
+  return phone; // Se não for 10 ou 11 dígitos, deixa como está
+};
+
 const CompanyCard: React.FC<CompanyCardProps> = ({
   id,
   nome,
@@ -193,7 +208,8 @@ const CompanyCard: React.FC<CompanyCardProps> = ({
         <div className="space-y-2 text-sm">
           <div className="flex justify-between">
             <span className="text-muted-foreground">CNPJ:</span>
-            <span className="font-medium">{truncateText(cnpj)}</span>
+            <span className="font-medium">{formatCNPJ(cnpj)}</span>
+
           </div>
           <div className="flex justify-between">
             <span className="text-muted-foreground">Email:</span>
@@ -201,7 +217,7 @@ const CompanyCard: React.FC<CompanyCardProps> = ({
           </div>
           <div className="flex justify-between">
             <span className="text-muted-foreground">Telefone:</span>
-            <span className="font-medium">{truncateText(telcom)}</span>
+            <span className="font-medium">{formatPhone(telcom)}</span>
           </div>
           <div className="flex justify-between">
             <span className="text-muted-foreground">Funcionários:</span>

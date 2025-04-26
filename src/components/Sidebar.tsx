@@ -72,12 +72,12 @@ const Sidebar: React.FC = () => {
           path: '/service-types',
           permission: 'cadastros'
         },
-        {
-          title: 'Votos',
-          icon: ThumbsUp,
-          path: '/votes',
-          permission: 'pesquisas'
-        },
+        // {
+        //   title: 'Votos',
+        //   icon: ThumbsUp,
+        //   path: '/votes',
+        //   permission: 'pesquisas'
+        // },
         {
           title: 'Usuários',
           icon: Users,
