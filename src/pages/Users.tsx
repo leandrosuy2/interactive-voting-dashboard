@@ -200,22 +200,22 @@ export default function Users() {
       };
 
       console.log('Dados formatados para o backend:', userData);
-      
+
       // Cria o usuário
       const newUser = await users.create(userData);
-      
+
       // Depois, vincula o usuário às empresas
       if (data.empresas && data.empresas.length > 0) {
         for (const companyId of data.empresas) {
           await users.linkToCompany(newUser.id, companyId);
         }
       }
-      
+
       toast({
         title: "Sucesso",
         description: "Usuário criado com sucesso",
       });
-      
+
       setIsCreateDialogOpen(false);
       form.reset();
       refetchUsers();
@@ -247,12 +247,12 @@ export default function Users() {
       };
 
       console.log('Dados formatados para o backend:', userData);
-      
+
       if (!selectedUser) return;
-      
+
       // Atualiza os dados do usuário
       await users.update(selectedUser.id, userData);
-      
+
       // Depois, atualiza os vínculos com as empresas
       if (data.empresas && data.empresas.length > 0) {
         // Primeiro, remove todos os vínculos existentes
@@ -260,18 +260,18 @@ export default function Users() {
         for (const company of existingCompanies) {
           await users.unlinkFromCompany(selectedUser.id, company.id);
         }
-        
+
         // Depois, cria os novos vínculos
         for (const companyId of data.empresas) {
           await users.linkToCompany(selectedUser.id, companyId);
         }
       }
-      
+
       toast({
         title: "Sucesso",
         description: "Usuário atualizado com sucesso",
       });
-      
+
       setIsEditDialogOpen(false);
       updateForm.reset();
       setSelectedUser(null);
@@ -298,10 +298,10 @@ export default function Users() {
       const permissions = await users.getPermissions(user.id);
       setUserPermissions(permissions);
       setSelectedUser(user);
-      
+
       console.log('Usuário selecionado para edição:', user);
       console.log('Empresas do usuário:', user.empresas);
-      
+
       // Inicializa o formulário com os dados do usuário
       const formData = {
         username: user.username,
@@ -314,10 +314,10 @@ export default function Users() {
         perfil_acesso: user.perfil_acesso,
         empresas: user.empresas.map(empresa => empresa.id)
       };
-      
+
       console.log('Dados do formulário:', formData);
       updateForm.reset(formData);
-      
+
       setIsEditDialogOpen(true);
     } catch (error) {
       console.error('Erro ao carregar permissões:', error);
@@ -360,8 +360,8 @@ export default function Users() {
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-24">
           <div className="grid grid-cols-1 gap-6">
             {[...Array(5)].map((_, index) => (
-              <div 
-                key={index} 
+              <div
+                key={index}
                 className="h-[60px] rounded-lg bg-secondary/30 animate-pulse"
               />
             ))}
@@ -392,7 +392,7 @@ export default function Users() {
               <RefreshCw className="h-4 w-4" />
               <span>Atualizar</span>
             </Button>
-            <Button 
+            <Button
               onClick={() => setIsCreateDialogOpen(true)}
               className="flex items-center gap-2"
             >
@@ -542,24 +542,25 @@ export default function Users() {
                         )}
                       />
                       <FormField
-                          control={form.control}
-                          name="telcel"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Telefone Celular</FormLabel>
-                              <FormControl>
-                                <InputMask
-                                  mask="(99) 99999-9999"
-                                  value={field.value || ''}
-                                  onChange={field.onChange}
-                                >
-                                  {(inputProps: any) => <Input {...inputProps} />}
-                                </InputMask>
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
+                        control={updateForm.control}
+                        name="telcel"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Telefone Celular</FormLabel>
+                            <FormControl>
+                              <InputMask
+                                key={field.name + (field.value || '')}
+                                mask="(99) 99999-9999"
+                                value={field.value || ''}
+                                onChange={field.onChange}
+                              >
+                                {(inputProps: any) => <Input {...inputProps} />}
+                              </InputMask>
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
                       {/* <FormField
                         control={form.control}
                         name="setor"
@@ -607,8 +608,8 @@ export default function Users() {
                                 className="flex h-32 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                               >
                                 {companiesList?.map((company) => (
-                                  <option 
-                                    key={company.id} 
+                                  <option
+                                    key={company.id}
                                     value={company.id}
                                   >
                                     {company.nome}
@@ -753,13 +754,19 @@ export default function Users() {
                           <FormItem>
                             <FormLabel>Telefone Celular</FormLabel>
                             <FormControl>
-                              <Input {...field} />
+                              <InputMask
+                                mask="(99) 99999-9999"
+                                value={field.value || ''}
+                                onChange={field.onChange}
+                              >
+                                {(inputProps: any) => <Input {...inputProps} />}
+                              </InputMask>
                             </FormControl>
                             <FormMessage />
                           </FormItem>
                         )}
                       />
-                      <FormField
+                      {/* <FormField
                         control={updateForm.control}
                         name="setor"
                         render={({ field }) => (
@@ -771,7 +778,7 @@ export default function Users() {
                             <FormMessage />
                           </FormItem>
                         )}
-                      />
+                      /> */}
                       <FormField
                         control={updateForm.control}
                         name="image"
@@ -809,8 +816,8 @@ export default function Users() {
                                   className="flex h-32 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                                 >
                                   {companiesList?.map((company) => (
-                                    <option 
-                                      key={company.id} 
+                                    <option
+                                      key={company.id}
                                       value={company.id}
                                     >
                                       {company.nome}
