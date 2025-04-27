@@ -1,11 +1,11 @@
 import React from 'react';
 import { Checkbox } from '@/components/ui/checkbox';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { 
-  ChevronRight, 
-  ChevronDown, 
-  Folder, 
-  File, 
+import {
+  ChevronRight,
+  ChevronDown,
+  Folder,
+  File,
   Loader2,
   LayoutDashboard,
   Settings,
@@ -21,7 +21,7 @@ import {
   Building,
   LayoutList,
   ThumbsUp,
-  
+
   Monitor,
   Calendar,
   PieChart,
@@ -59,55 +59,13 @@ const PERMISSION_CATEGORIES: PermissionCategory[] = [
     permissions: [
       { key: 'dashboard', label: 'Dashboard', icon: <BarChart className="h-4 w-4" /> },
       { key: 'gestao', label: 'Monitor', icon: <Monitor className="h-4 w-4" /> },
-  { key: 'cadastros_companies', label: 'Empresas', icon: <Building className="h-4 w-4" /> },
-  { key: 'cadastros_service_types', label: 'Tipos de Serviço', icon: <LayoutList className="h-4 w-4" /> },
-  { key: 'pesquisas_votes', label: 'Votos', icon: <ThumbsUp className="h-4 w-4" /> },
-  { key: 'autorizacoes_users', label: 'Usuários', icon: <Users className="h-4 w-4" /> },
-  { key: 'relatorios', label: 'Relatórios', icon: <FileText className="h-4 w-4" /> },
-    ]
-  },
-  {
-    name: 'Gestão',
-    icon: <Settings className="h-4 w-4" />,
-    permissions: [
-      { key: 'gestao', label: 'Gestão', icon: <Building2 className="h-4 w-4" /> },
-      { key: 'cadastros', label: 'Cadastros', icon: <ClipboardList className="h-4 w-4" /> },
-      { key: 'autorizacoes', label: 'Autorizações', icon: <Key className="h-4 w-4" /> }
-    ]
-  },
-  {
-    name: 'Níveis de Acesso',
-    icon: <Shield className="h-4 w-4" />,
-    permissions: [
-      { key: 'diretoria', label: 'Diretoria', icon: <Users className="h-4 w-4" /> },
-      { key: 'gerente', label: 'Gerente', icon: <Users className="h-4 w-4" /> },
-      { key: 'cliente', label: 'Cliente', icon: <Users className="h-4 w-4" /> }
-    ]
-  },
-  {
-    name: 'Pesquisas',
-    icon: <Search className="h-4 w-4" />,
-    permissions: [
-      { key: 'pesquisas', label: 'Pesquisas', icon: <Search className="h-4 w-4" /> },
-      { key: 'pesquisas_servico', label: 'Pesquisas por Serviço', icon: <Search className="h-4 w-4" /> }
-    ]
-  },
-  {
-    name: 'Relatórios',
-    icon: <FileText className="h-4 w-4" />,
-    permissions: [
+      { key: 'cadastros_companies', label: 'Empresas', icon: <Building className="h-4 w-4" /> },
+      { key: 'cadastros_service_types', label: 'Tipos de Serviço', icon: <LayoutList className="h-4 w-4" /> },
+      { key: 'pesquisas_votes', label: 'Votos', icon: <ThumbsUp className="h-4 w-4" /> },
+      { key: 'autorizacoes_users', label: 'Usuários', icon: <Users className="h-4 w-4" /> },
       { key: 'relatorios', label: 'Relatórios', icon: <FileText className="h-4 w-4" /> },
-      { key: 'relatorio_diario', label: 'Relatório Diário', icon: <Calendar className="h-4 w-4" /> },
-      { key: 'relatorio_mensal', label: 'Relatório Mensal', icon: <PieChart className="h-4 w-4" /> }
-    ]
+    ],
   },
-  {
-    name: 'Outros',
-    icon: <Settings className="h-4 w-4" />,
-    permissions: [
-      { key: 'install_app_mobile', label: 'Install App Mobile', icon: <Smartphone className="h-4 w-4" /> }
-    ]
-  }
 ];
 
 export const PermissionsTree: React.FC<PermissionsTreeProps> = ({

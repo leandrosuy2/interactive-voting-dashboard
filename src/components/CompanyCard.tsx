@@ -220,7 +220,7 @@ const CompanyCard: React.FC<CompanyCardProps> = ({
             <span className="font-medium">{formatPhone(telcom)}</span>
           </div>
           <div className="flex justify-between">
-            <span className="text-muted-foreground">Funcionários:</span>
+            <span className="text-muted-foreground">Qtd Refeiçoes:</span>
             <span className="font-medium">{qt_funcionarios.toString()}</span>
           </div>
           {/* <div className="flex justify-between">
