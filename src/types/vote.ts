@@ -36,22 +36,26 @@ export interface ServiceVotes {
 
 export interface VoteAnalytics {
   totalVotes: number;
-  avaliacoesPorTipo: {
-    Ótimo: number;
-    Bom: number;
-    Regular: number;
-    Ruim: number;
-  };
-  percentuaisPorTipo: {
-    Ótimo: number;
-    Bom: number;
-    Regular: number;
-    Ruim: number;
-  };
-  votesByService: {
-    [key: string]: ServiceVotes;
-  };
-  recentVotes: Vote[];
+  avaliacoesPorTipo: Record<string, number>;
+  percentuaisPorTipo: Record<string, number>;
+  votesByService: Record<string, {
+    total: number;
+    avaliacoes: Record<string, number>;
+    percentuais: Record<string, number>;
+    serviceInfo?: {
+      nome: string;
+      hora_inicio: string;
+      hora_final: string;
+    };
+  }>;
+  votesByDay: {
+    data: string;
+    empresa: string;
+    otimo: number;
+    bom: number;
+    regular: number;
+    total: number;
+  }[]; // <-- Adicionado aqui!
 }
 
 export interface ProcessedVote {

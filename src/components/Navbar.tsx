@@ -40,7 +40,7 @@ const Navbar: React.FC = () => {
           <div className="hidden md:flex items-center space-x-1">
             {isAuthenticated ? (
               <>
-                <Link 
+                {/* <Link 
                   to="/dashboard" 
                   className={`relative px-3 py-2 rounded-md text-sm font-medium transition-colors ${
                     isActive('/dashboard') 
@@ -52,8 +52,8 @@ const Navbar: React.FC = () => {
                   {isActive('/dashboard') && (
                     <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary rounded-full transform animate-pulse" />
                   )}
-                </Link>
-                <Link 
+                </Link> */}
+                {/* <Link 
                   to="/companies" 
                   className={`relative px-3 py-2 rounded-md text-sm font-medium transition-colors ${
                     isActive('/companies') 
@@ -65,8 +65,8 @@ const Navbar: React.FC = () => {
                   {isActive('/companies') && (
                     <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary rounded-full transform animate-pulse" />
                   )}
-                </Link>
-                <Link 
+                </Link> */}
+                {/* <Link 
                   to="/service-types" 
                   className={`relative px-3 py-2 rounded-md text-sm font-medium transition-colors ${
                     isActive('/service-types') 
@@ -78,7 +78,7 @@ const Navbar: React.FC = () => {
                   {isActive('/service-types') && (
                     <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary rounded-full transform animate-pulse" />
                   )}
-                </Link>
+                </Link> */}
                 <div className="ml-4 flex items-center gap-2">
                   <ThemeToggle />
                   <span className="text-sm font-medium text-foreground/80">
