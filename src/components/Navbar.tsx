@@ -3,8 +3,10 @@ import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/button';
-import { LogOut, Activity, BarChart3, Building, LayoutList } from 'lucide-react';
+import { LogOut, Activity, BarChart3, Building, LayoutList,Menu } from 'lucide-react';
 import ThemeToggle from './ThemeToggle';
+import { SidebarTrigger } from '@/components/ui/sidebar';
+
 
 const Navbar: React.FC = () => {
   const { isAuthenticated, logout, user } = useAuth();
@@ -16,9 +18,14 @@ const Navbar: React.FC = () => {
 
   return (
     <nav className="fixed top-0 left-0 right-0 bg-background/80 backdrop-blur-md z-50 border-b border-border transition-all duration-300">
+
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           <div className="flex items-center">
+          <SidebarTrigger className="mr-2 p-2 rounded-md hover:bg-accent transition">
+            <Menu className="h-5 w-5" />
+          </SidebarTrigger>
+
             <Link 
               to="/" 
               className="flex items-center gap-2 transition-transform hover:scale-105 duration-300"
@@ -26,6 +33,8 @@ const Navbar: React.FC = () => {
               <Activity className="h-6 w-6 text-primary" />
               <span className="text-xl font-semibold text-foreground">Satisfaction</span>
             </Link>
+          
+
           </div>
           
           <div className="hidden md:flex items-center space-x-1">

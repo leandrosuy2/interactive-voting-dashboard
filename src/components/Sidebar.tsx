@@ -110,7 +110,8 @@ const Sidebar: React.FC = () => {
       ];
 
   return (
-    <SidebarComponent className="bg-background border-r border-border">
+    <SidebarComponent className="bg-background border-r border-border" breakpoint="md" defaultCollapsed>
+
       <SidebarHeader className="p-4">
         <Link to="/" className="flex items-center gap-2 px-2">
           <Activity className="h-6 w-6 text-primary" />
