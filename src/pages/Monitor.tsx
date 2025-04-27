@@ -726,6 +726,30 @@ const Monitor: React.FC = () => {
               </div>
             </div>
           </div>
+
+          {/* SERVIÇO ATUAL - AQUI */}
+          <div className="flex flex-col items-center justify-center flex-1 mx-6 my-4 md:my-0 text-center">
+              {(() => {
+                const service = getActiveService();
+                if (service) {
+                  return (
+                    <div className="flex flex-col items-center">
+                      <span className="text-5xl font-bold text-red-500">{service.nome}</span>
+                      {/* <span className="text-xs text-muted-foreground">
+                        ({service.hora_inicio} - {service.hora_final})
+                      </span> */}
+                    </div>
+                  );
+                }
+                return (
+                  <div className="flex flex-col items-center">
+                    <span className="text-5xl font-bold text-red-500">
+                      Intervalo
+                    </span>
+                  </div>
+                );
+              })()}
+            </div>
           <div className="flex items-center space-x-4">
             <Select
               value={selectedCompanyId || 'all'}
@@ -755,9 +779,9 @@ const Monitor: React.FC = () => {
         </div>
 
         {/* Filtros */}
-        <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-8">
-          <div className="flex items-center space-x-4">
-            <Select value={timeRange} onValueChange={(value: TimeRange) => setTimeRange(value)}>
+        {/* <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-8">
+          <div className="flex items-center space-x-4"> */}
+            {/* <Select value={timeRange} onValueChange={(value: TimeRange) => setTimeRange(value)}>
               <SelectTrigger className="w-[180px]">
                 <SelectValue placeholder="Período" />
               </SelectTrigger>
@@ -767,7 +791,7 @@ const Monitor: React.FC = () => {
                 <SelectItem value="7d">Últimos 7 dias</SelectItem>
                 <SelectItem value="30d">Últimos 30 dias</SelectItem>
               </SelectContent>
-            </Select>
+            </Select> */}
             {/* <div className="flex items-center space-x-2">
               <input
                 type="checkbox"
@@ -780,8 +804,8 @@ const Monitor: React.FC = () => {
                 Apenas serviços ativos
               </label>
             </div> */}
-          </div>
-        </div>
+          {/* </div>
+        </div> */}
 
         {/* Alertas */}
         {alerts.length > 0 && (
@@ -813,7 +837,7 @@ const Monitor: React.FC = () => {
           </div>
         )}
 
-        {/* Serviço Atual */}
+        {/* Serviço Atual
         {selectedCompany && (
           <Card className="mb-8 bg-gradient-to-br from-purple-500/5 to-purple-500/10">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -845,10 +869,26 @@ const Monitor: React.FC = () => {
               })()}
             </CardContent>
           </Card>
-        )}
+        )} */}
+
+        
+
+        {/* Estatísticas de Votos */}
+        <Card className="mt-8 bg-gradient-to-br from-primary/5 to-primary/10">
+          <CardHeader>
+            <div className="flex items-center space-x-2">
+              <BarChart3 className="h-5 w-5 text-primary" />
+              <CardTitle>Estatísticas de Votos</CardTitle>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <VoteStats votes={filteredVotes} />
+          </CardContent>
+        </Card>
+
 
         {/* Status em tempo real */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8 mt-8">
           <Card className="bg-gradient-to-br from-primary/5 to-primary/10">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Status</CardTitle>
@@ -919,19 +959,6 @@ const Monitor: React.FC = () => {
             </CardContent>
           </Card>
         </div>
-
-        {/* Estatísticas de Votos */}
-        <Card className="mt-8 bg-gradient-to-br from-primary/5 to-primary/10">
-          <CardHeader>
-            <div className="flex items-center space-x-2">
-              <BarChart3 className="h-5 w-5 text-primary" />
-              <CardTitle>Estatísticas de Votos</CardTitle>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <VoteStats votes={filteredVotes} />
-          </CardContent>
-        </Card>
 
         {/* Votos recentes com indicadores */}
         <Card className="mt-8 bg-gradient-to-br from-primary/5 to-primary/10">
