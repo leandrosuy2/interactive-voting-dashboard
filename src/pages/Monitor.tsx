@@ -128,6 +128,12 @@ const Monitor: React.FC = () => {
     queryFn: companies.getAll,
   });
 
+  useEffect(() => {
+    if (companiesList && companiesList.length === 1) {
+      navigate(`/monitor/${companiesList[0].id}`);
+    }
+  }, [companiesList, navigate]);
+
   const selectedCompany = companiesList?.find(
     (company) => company.id === selectedCompanyId
   );
@@ -300,10 +306,10 @@ const Monitor: React.FC = () => {
       // Update analytics state immediately
       setAnalytics(prevAnalytics => {
         if (!prevAnalytics) return null;
-        
+
         // Atualiza os votos recentes
         const updatedRecentVotes = [updatedVote, ...prevAnalytics.recentVotes];
-        
+
         // Atualiza as avaliações por tipo
         const updatedAvaliacoesPorTipo = {
           ...prevAnalytics.avaliacoesPorTipo,
@@ -323,7 +329,7 @@ const Monitor: React.FC = () => {
               votes: []
             };
           }
-          
+
           const serviceData = updatedVotesByService[serviceKey];
           serviceData.total += 1;
           serviceData.votes = [updatedVote, ...serviceData.votes];
@@ -334,7 +340,7 @@ const Monitor: React.FC = () => {
         }
 
         console.log('Updating analytics with new vote:', updatedVote);
-        
+
         return {
           ...prevAnalytics,
           recentVotes: updatedRecentVotes,
@@ -346,7 +352,7 @@ const Monitor: React.FC = () => {
 
       // Refetch to get fresh data
       await refetch();
-      
+
       // Show toast notification
       toast({
         title: 'Novo voto recebido!',
@@ -460,7 +466,7 @@ const Monitor: React.FC = () => {
 
   // const getFilteredVotes = (votes: Vote[]) => {
   //   if (!votes || votes.length === 0) return [];
-    
+
   //   // Encontra a data mais recente dos votos
   //   const latestVoteDate = new Date(Math.max(...votes.map(v => new Date(v.momento_voto).getTime())));
   //   let startDate: Date;
@@ -483,7 +489,7 @@ const Monitor: React.FC = () => {
   //   // Se houver um serviço ativo, usa os votos desse serviço
   //   if (activeService && analytics?.votesByService[activeService.id]) {
   //     let serviceVotes = analytics.votesByService[activeService.id].votes;
-      
+
   //     // Filtra por intervalo de tempo
   //     return serviceVotes.filter((vote) =>
   //       isWithinInterval(new Date(vote.momento_voto), { start: startDate, end: latestVoteDate })
@@ -497,13 +503,13 @@ const Monitor: React.FC = () => {
   // };
   const getFilteredVotes = (votes: Vote[]) => {
     if (!votes || votes.length === 0) return [];
-  
+
     // 🔒 Se estiver em intervalo, retorna zero votos
     if (!activeService) return [];
-  
+
     const latestVoteDate = new Date(Math.max(...votes.map(v => new Date(v.momento_voto).getTime())));
     let startDate: Date;
-  
+
     switch (timeRange) {
       case '1h':
         startDate = subHours(latestVoteDate, 1);
@@ -518,9 +524,9 @@ const Monitor: React.FC = () => {
         startDate = subDays(latestVoteDate, 30);
         break;
     }
-  
+
     const serviceVotes = analytics?.votesByService[activeService.id]?.votes || [];
-  
+
     return serviceVotes.filter((vote) =>
       isWithinInterval(new Date(vote.momento_voto), {
         start: startDate,
@@ -585,7 +591,7 @@ const Monitor: React.FC = () => {
   const clearVotes = () => {
     setAnalytics(prevAnalytics => {
       if (!prevAnalytics) return null;
-      
+
       // Reset the analytics to show all votes when in interval
       return {
         ...prevAnalytics,
@@ -729,27 +735,27 @@ const Monitor: React.FC = () => {
 
           {/* SERVIÇO ATUAL - AQUI */}
           <div className="flex flex-col items-center justify-center flex-1 mx-6 my-4 md:my-0 text-center">
-              {(() => {
-                const service = getActiveService();
-                if (service) {
-                  return (
-                    <div className="flex flex-col items-center">
-                      <span className="text-5xl font-bold text-red-500">{service.nome}</span>
-                      {/* <span className="text-xs text-muted-foreground">
-                        ({service.hora_inicio} - {service.hora_final})
-                      </span> */}
-                    </div>
-                  );
-                }
+            {(() => {
+              const service = getActiveService();
+              if (service) {
                 return (
                   <div className="flex flex-col items-center">
-                    <span className="text-5xl font-bold text-red-500">
-                      Intervalo
-                    </span>
+                    <span className="text-5xl font-bold text-red-500">{service.nome}</span>
+                    {/* <span className="text-xs text-muted-foreground">
+                        ({service.hora_inicio} - {service.hora_final})
+                      </span> */}
                   </div>
                 );
-              })()}
-            </div>
+              }
+              return (
+                <div className="flex flex-col items-center">
+                  <span className="text-5xl font-bold text-red-500">
+                    Intervalo
+                  </span>
+                </div>
+              );
+            })()}
+          </div>
           <div className="flex items-center space-x-4">
             <Select
               value={selectedCompanyId || 'all'}
@@ -781,7 +787,7 @@ const Monitor: React.FC = () => {
         {/* Filtros */}
         {/* <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-8">
           <div className="flex items-center space-x-4"> */}
-            {/* <Select value={timeRange} onValueChange={(value: TimeRange) => setTimeRange(value)}>
+        {/* <Select value={timeRange} onValueChange={(value: TimeRange) => setTimeRange(value)}>
               <SelectTrigger className="w-[180px]">
                 <SelectValue placeholder="Período" />
               </SelectTrigger>
@@ -792,7 +798,7 @@ const Monitor: React.FC = () => {
                 <SelectItem value="30d">Últimos 30 dias</SelectItem>
               </SelectContent>
             </Select> */}
-            {/* <div className="flex items-center space-x-2">
+        {/* <div className="flex items-center space-x-2">
               <input
                 type="checkbox"
                 id="activeServices"
@@ -804,7 +810,7 @@ const Monitor: React.FC = () => {
                 Apenas serviços ativos
               </label>
             </div> */}
-          {/* </div>
+        {/* </div>
         </div> */}
 
         {/* Alertas */}
@@ -871,7 +877,7 @@ const Monitor: React.FC = () => {
           </Card>
         )} */}
 
-        
+
 
         {/* Estatísticas de Votos */}
         <Card className="mt-8 bg-gradient-to-br from-primary/5 to-primary/10">
