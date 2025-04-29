@@ -81,7 +81,13 @@ const Reports: React.FC = () => {
       const token = localStorage.getItem('token');
       if (!token) throw new Error('Token não encontrado');
 
-      const response = await fetch(`https://api.vvrefeicoes.com.br/companies/${selectedCompany}/services`, {
+      // const response = await fetch(`https://api.vvrefeicoes.com.br/companies/${selectedCompany}/services`, {
+      //   headers: {
+      //     'Authorization': `Bearer ${token}`,
+      //     'Content-Type': 'application/json'
+      //   }
+      // });
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/companies/${selectedCompany}/services`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'

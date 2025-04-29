@@ -297,7 +297,8 @@ const Monitor: React.FC = () => {
   useEffect(() => {
     if (!selectedCompanyId) return;
 
-    const newSocket = io('https://api.vvrefeicoes.com.br');
+    const newSocket = io(import.meta.env.VITE_API_URL as string);
+    // const newSocket = io('https://api.vvrefeicoes.com.br');
     setSocket(newSocket);
 
     newSocket.emit('joinCompanyRoom', selectedCompanyId);
