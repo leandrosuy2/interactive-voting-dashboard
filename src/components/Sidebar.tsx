@@ -64,25 +64,25 @@ const Sidebar: React.FC = () => {
         title: 'Empresas',
         icon: Building,
         path: '/companies',
-        permission: 'cadastros'
+        permission: 'cadastros_companies'
       },
       {
         title: 'Tipos de Serviço',
         icon: LayoutList,
         path: '/service-types',
-        permission: 'cadastros'
+        permission: 'cadastros_service_types'
       },
       {
         title: 'Votos',
         icon: ThumbsUp,
         path: '/votes',
-        permission: 'pesquisas'
+        permission: 'pesquisas_votes'
       },
       {
         title: 'Usuários',
         icon: Users,
         path: '/users',
-        permission: 'autorizacoes'
+        permission: 'autorizacoes_users'
       },
       {
         title: 'Relatórios',

@@ -35,7 +35,7 @@ api.interceptors.response.use(
       // Remove token and user data
       localStorage.removeItem('token');
       localStorage.removeItem('user');
-      
+
       // Only redirect if we're not already on the login page
       const currentPath = window.location.pathname;
       if (currentPath !== '/login') {
@@ -52,10 +52,10 @@ export const auth = {
     const response = await api.post('/auth/login', { username, password });
     return response.data;
   },
-  register: async (userData: { 
-    username: string; 
-    password: string; 
-    email: string; 
+  register: async (userData: {
+    username: string;
+    password: string;
+    email: string;
     nome: string;
     cargo: string;
     perfil_acesso: string;
@@ -194,8 +194,8 @@ export const companies = {
 
 // Votes APIs
 export const votes = {
-  create: async (data: { 
-    id_empresa: string; 
+  create: async (data: {
+    id_empresa: string;
     id_tipo_servico: string;
     avaliacao: string;
     comentario?: string;
@@ -207,7 +207,7 @@ export const votes = {
     try {
       const response = await api.get('/votes');
       const votes = response.data;
-      
+
       // Busca os dados das empresas para cada voto
       const votesWithCompany = await Promise.all(
         votes.map(async (vote: Vote) => {
@@ -219,7 +219,7 @@ export const votes = {
           }
         })
       );
-      
+
       return votesWithCompany;
     } catch (error) {
       if (axios.isAxiosError(error)) {
@@ -228,9 +228,9 @@ export const votes = {
       throw error;
     }
   },
-  getAnalytics: async (companyId: string, filters?: { 
-    startDate?: string; 
-    endDate?: string; 
+  getAnalytics: async (companyId: string, filters?: {
+    startDate?: string;
+    endDate?: string;
     quickFilter?: string;
   }): Promise<VoteAnalytics> => {
     try {
@@ -238,13 +238,13 @@ export const votes = {
       if (filters?.startDate) params.append('startDate', filters.startDate);
       if (filters?.endDate) params.append('endDate', filters.endDate);
       if (filters?.quickFilter) params.append('quickFilter', filters.quickFilter);
-      
+
       const response = await api.get(`/votes/analytics/${companyId}?${params.toString()}`);
-      
+
       if (!response.data) {
         throw new Error('Nenhum dado retornado da API');
       }
-      
+
       return response.data;
     } catch (error) {
       console.error('Error fetching analytics:', error);

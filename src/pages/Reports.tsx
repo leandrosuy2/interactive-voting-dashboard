@@ -80,7 +80,7 @@ const Reports: React.FC = () => {
       if (!selectedCompany) return [];
       const token = localStorage.getItem('token');
       if (!token) throw new Error('Token não encontrado');
-      
+
       const response = await fetch(`https://api.vvrefeicoes.com.br/companies/${selectedCompany}/services`, {
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -214,7 +214,7 @@ const Reports: React.FC = () => {
           </Popover>
         </div>
       </div>
-      
+
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         <Card className="col-span-1">
           <CardHeader>
