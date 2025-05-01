@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Pencil, Trash2, Plus, Clock, ChevronDown, ChevronUp, BarChart2, Building2 } from 'lucide-react';
 import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
-import { companies } from '@/services/api';
+import { companies, serviceTypes as serviceTypesApi } from '@/services/api';
 import { useToast } from '@/hooks/use-toast';
 import { Company, CompanyService } from '@/types/company';
 import AddCompanyServiceDialog from './AddCompanyServiceDialog';
@@ -39,7 +39,6 @@ interface CompanyCardProps {
   onDelete: () => void;
 }
 
-// Função para truncar o texto
 const truncateText = (text: string, maxLength: number = 20) => {
   if (!text) return '';
   if (text.length <= maxLength) return text;
@@ -58,7 +57,7 @@ const formatPhone = (phone: string) => {
   } else if (cleaned.length === 10) {
     return cleaned.replace(/^(\d{2})(\d{4})(\d{4})$/, '($1) $2-$3');
   }
-  return phone; // Se não for 10 ou 11 dígitos, deixa como está
+  return phone;
 };
 
 const CompanyCard: React.FC<CompanyCardProps> = ({
@@ -84,6 +83,15 @@ const CompanyCard: React.FC<CompanyCardProps> = ({
     queryKey: ['company-services', id],
     queryFn: () => companies.getServices(id),
   });
+
+  const { data: serviceTypes } = useQuery({
+    queryKey: ['service-types'],
+    queryFn: serviceTypesApi.getAll,
+  });
+
+  const getServiceTypeName = (tipo_servico_id: string) => {
+    return serviceTypes?.find((type) => type.id === tipo_servico_id)?.nome || tipo_servico_id;
+  };
 
   const deleteMutation = useMutation({
     mutationFn: companies.delete,
@@ -132,18 +140,6 @@ const CompanyCard: React.FC<CompanyCardProps> = ({
     }
   };
 
-  const getLineLabel = (value: number): string => {
-    const lines = {
-      0: 'VOTACAO',
-      1: 'TRADICIONAL',
-      2: 'LEVE',
-      3: 'JAPONESA',
-      4: 'GRILL',
-      5: 'GOURMET'
-    };
-    return lines[value as keyof typeof lines] || 'DESCONHECIDA';
-  };
-
   return (
     <>
       <div className="bg-card rounded-lg border p-4 space-y-4">
@@ -154,9 +150,7 @@ const CompanyCard: React.FC<CompanyCardProps> = ({
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <h3 className="font-medium text-lg">
-                      {truncateText(nome)}
-                    </h3>
+                    <h3 className="font-medium text-lg">{truncateText(nome)}</h3>
                   </TooltipTrigger>
                   <TooltipContent>
                     <p>{nome}</p>
@@ -167,97 +161,43 @@ const CompanyCard: React.FC<CompanyCardProps> = ({
             <p className="text-sm text-muted-foreground">{truncateText(razao_social)}</p>
           </div>
           <div className="flex items-center gap-1">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => {
-                setSelectedService(null);
-                setIsAddServiceOpen(true);
-              }}
-              className="h-8 w-8"
-            >
+            <Button variant="ghost" size="icon" onClick={() => { setSelectedService(null); setIsAddServiceOpen(true); }} className="h-8 w-8">
               <Plus className="h-4 w-4" />
             </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={onEdit}
-              className="h-8 w-8"
-            >
+            <Button variant="ghost" size="icon" onClick={onEdit} className="h-8 w-8">
               <Pencil className="h-4 w-4" />
             </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={handleDelete}
-              className="h-8 w-8"
-            >
+            <Button variant="ghost" size="icon" onClick={handleDelete} className="h-8 w-8">
               <Trash2 className="h-4 w-4" />
             </Button>
             <Link to={`/monitor/${id}`}>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8"
-              >
+              <Button variant="ghost" size="icon" className="h-8 w-8">
                 <BarChart2 className="h-4 w-4" />
               </Button>
             </Link>
           </div>
         </div>
-        <div className="space-y-2 text-sm">
-          <div className="flex justify-between">
-            <span className="text-muted-foreground">CNPJ:</span>
-            <span className="font-medium">{formatCNPJ(cnpj)}</span>
 
-          </div>
-          <div className="flex justify-between">
-            <span className="text-muted-foreground">Email:</span>
-            <span className="font-medium">{truncateText(email)}</span>
-          </div>
-          <div className="flex justify-between">
-            <span className="text-muted-foreground">Telefone:</span>
-            <span className="font-medium">{formatPhone(telcom)}</span>
-          </div>
-          <div className="flex justify-between">
-            <span className="text-muted-foreground">Qtd Refeiçoes:</span>
-            <span className="font-medium">{qt_funcionarios.toString()}</span>
-          </div>
-          {/* <div className="flex justify-between">
-            <span className="text-muted-foreground">Linha:</span>
-            <span className="font-medium">{getLineLabel(linha)}</span>
-          </div> */}
+        <div className="space-y-2 text-sm">
+          <div className="flex justify-between"><span className="text-muted-foreground">CNPJ:</span><span className="font-medium">{formatCNPJ(cnpj)}</span></div>
+          <div className="flex justify-between"><span className="text-muted-foreground">Email:</span><span className="font-medium">{truncateText(email)}</span></div>
+          <div className="flex justify-between"><span className="text-muted-foreground">Telefone:</span><span className="font-medium">{formatPhone(telcom)}</span></div>
+          <div className="flex justify-between"><span className="text-muted-foreground">Qtd Refeiçoes:</span><span className="font-medium">{qt_funcionarios.toString()}</span></div>
         </div>
 
         <div className="pt-4 border-t">
           <div className="flex items-center justify-between mb-2">
             <h4 className="font-medium">Serviços</h4>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setIsServicesExpanded(!isServicesExpanded)}
-              className="h-8 px-2"
-            >
-              {isServicesExpanded ? (
-                <>
-                  <ChevronUp className="h-4 w-4 mr-1" />
-                  Ocultar
-                </>
-              ) : (
-                <>
-                  <ChevronDown className="h-4 w-4 mr-1" />
-                  Ver Serviços
-                </>
-              )}
+            <Button variant="ghost" size="sm" onClick={() => setIsServicesExpanded(!isServicesExpanded)} className="h-8 px-2">
+              {isServicesExpanded ? (<><ChevronUp className="h-4 w-4 mr-1" />Ocultar</>) : (<><ChevronDown className="h-4 w-4 mr-1" />Ver Serviços</>)}
             </Button>
           </div>
+
           {isServicesExpanded && (
             <>
               {isLoadingServices ? (
                 <div className="space-y-2">
-                  <div className="h-8 bg-secondary/30 rounded animate-pulse" />
-                  <div className="h-8 bg-secondary/30 rounded animate-pulse" />
-                  <div className="h-8 bg-secondary/30 rounded animate-pulse" />
+                  {[...Array(3)].map((_, idx) => <div key={idx} className="h-8 bg-secondary/30 rounded animate-pulse" />)}
                 </div>
               ) : services && services.length > 0 ? (
                 <div className="space-y-2">
@@ -265,7 +205,7 @@ const CompanyCard: React.FC<CompanyCardProps> = ({
                     <div key={service.id} className="flex items-center justify-between p-2 bg-secondary/20 rounded group">
                       <div className="flex-1">
                         <p className="font-medium">{service.nome}</p>
-                        <p className="text-sm text-muted-foreground">Tipo: {service.tipo_servico}</p>
+                        <p className="text-sm text-muted-foreground">Tipo: {getServiceTypeName(service.tipo_servico)}</p>
                       </div>
                       <div className="flex items-center gap-4">
                         <div className="flex items-center gap-2 text-sm text-muted-foreground">
@@ -273,21 +213,12 @@ const CompanyCard: React.FC<CompanyCardProps> = ({
                           <span>{service.hora_inicio} - {service.hora_final}</span>
                         </div>
                         <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => handleEditService(service)}
-                            className="h-6 w-6"
-                          >
+                          <Button variant="ghost" size="icon" onClick={() => handleEditService(service)} className="h-6 w-6">
                             <Pencil className="h-3 w-3" />
                           </Button>
                           <AlertDialog>
                             <AlertDialogTrigger asChild>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-6 w-6"
-                              >
+                              <Button variant="ghost" size="icon" className="h-6 w-6">
                                 <Trash2 className="h-3 w-3" />
                               </Button>
                             </AlertDialogTrigger>
@@ -300,10 +231,7 @@ const CompanyCard: React.FC<CompanyCardProps> = ({
                               </AlertDialogHeader>
                               <AlertDialogFooter>
                                 <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                                <AlertDialogAction
-                                  onClick={() => handleDeleteService(service.id)}
-                                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                                >
+                                <AlertDialogAction onClick={() => handleDeleteService(service.id)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
                                   Excluir
                                 </AlertDialogAction>
                               </AlertDialogFooter>
@@ -327,9 +255,7 @@ const CompanyCard: React.FC<CompanyCardProps> = ({
         onOpenChange={setIsAddServiceOpen}
         companyId={id}
         service={selectedService}
-        onSuccess={() => {
-          queryClient.invalidateQueries({ queryKey: ['company-services', id] });
-        }}
+        onSuccess={() => queryClient.invalidateQueries({ queryKey: ['company-services', id] })}
       />
     </>
   );

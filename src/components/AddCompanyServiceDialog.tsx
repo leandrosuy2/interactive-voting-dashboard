@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { companies } from '@/services/api';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { companies, serviceTypes } from '@/services/api';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -21,6 +21,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { CreateCompanyServiceRequest, CompanyService } from '@/types/company';
+import { ServiceType } from '@/types/serviceType';
 
 interface AddCompanyServiceDialogProps {
   open: boolean;
@@ -44,7 +45,12 @@ const AddCompanyServiceDialog: React.FC<AddCompanyServiceDialogProps> = ({
     nome: '',
     hora_inicio: '',
     hora_final: '',
-    user_add: 'admin', // TODO: Get from auth context
+    user_add: 'admin',
+  });
+
+  const { data: serviceTypesData, isLoading: isLoadingServiceTypes } = useQuery({
+    queryKey: ['service-types'],
+    queryFn: serviceTypes.getAll,
   });
 
   useEffect(() => {
@@ -74,17 +80,10 @@ const AddCompanyServiceDialog: React.FC<AddCompanyServiceDialogProps> = ({
       queryClient.invalidateQueries({ queryKey: ['company-services', companyId] });
       onSuccess();
       onOpenChange(false);
-      toast({
-        title: "Serviço adicionado",
-        description: "Serviço adicionado com sucesso",
-      });
+      toast({ title: 'Serviço adicionado com sucesso' });
     },
     onError: (error: Error) => {
-      toast({
-        title: "Erro",
-        description: error.message,
-        variant: "destructive",
-      });
+      toast({ title: 'Erro', description: error.message, variant: 'destructive' });
     },
   });
 
@@ -95,17 +94,10 @@ const AddCompanyServiceDialog: React.FC<AddCompanyServiceDialogProps> = ({
       queryClient.invalidateQueries({ queryKey: ['company-services', companyId] });
       onSuccess();
       onOpenChange(false);
-      toast({
-        title: "Serviço atualizado",
-        description: "Serviço atualizado com sucesso",
-      });
+      toast({ title: 'Serviço atualizado com sucesso' });
     },
     onError: (error: Error) => {
-      toast({
-        title: "Erro",
-        description: error.message,
-        variant: "destructive",
-      });
+      toast({ title: 'Erro', description: error.message, variant: 'destructive' });
     },
   });
 
@@ -124,9 +116,7 @@ const AddCompanyServiceDialog: React.FC<AddCompanyServiceDialogProps> = ({
         <DialogHeader>
           <DialogTitle>{service ? 'Editar Serviço' : 'Adicionar Serviço'}</DialogTitle>
           <DialogDescription>
-            {service
-              ? 'Edite as informações do serviço.'
-              : 'Adicione um novo serviço para esta empresa.'}
+            {service ? 'Edite as informações do serviço.' : 'Adicione um novo serviço para esta empresa.'}
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -134,33 +124,37 @@ const AddCompanyServiceDialog: React.FC<AddCompanyServiceDialogProps> = ({
             <Label htmlFor="tipo_servico">Tipo de Serviço</Label>
             <Select
               value={formData.tipo_servico}
-              onValueChange={(value) =>
-                setFormData({ ...formData, tipo_servico: value })
-              }
+              onValueChange={(value) => setFormData({ ...formData, tipo_servico: value })}
             >
               <SelectTrigger>
                 <SelectValue placeholder="Selecione o tipo de serviço" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="1">Desjejum</SelectItem>
-                <SelectItem value="2">Lanche</SelectItem>
-                <SelectItem value="3">Almoço</SelectItem>
-                <SelectItem value="4">Jantar</SelectItem>
-                <SelectItem value="5">Ceia</SelectItem>
+                {isLoadingServiceTypes ? (
+                  <div className="p-2 text-sm text-muted-foreground">Carregando...</div>
+                ) : serviceTypesData?.length ? (
+                  serviceTypesData.map((type: ServiceType) => (
+                    <SelectItem key={type.id} value={type.id}>
+                      {type.nome}
+                    </SelectItem>
+                  ))
+                ) : (
+                  <div className="p-2 text-sm text-muted-foreground">Nenhum tipo de serviço</div>
+                )}
               </SelectContent>
             </Select>
           </div>
+
           <div className="space-y-2">
             <Label htmlFor="nome">Nome do Serviço</Label>
             <Input
               id="nome"
               value={formData.nome}
-              onChange={(e) =>
-                setFormData({ ...formData, nome: e.target.value })
-              }
+              onChange={(e) => setFormData({ ...formData, nome: e.target.value })}
               placeholder="Digite o nome do serviço"
             />
           </div>
+
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="hora_inicio">Hora Início</Label>
@@ -168,9 +162,7 @@ const AddCompanyServiceDialog: React.FC<AddCompanyServiceDialogProps> = ({
                 id="hora_inicio"
                 type="time"
                 value={formData.hora_inicio}
-                onChange={(e) =>
-                  setFormData({ ...formData, hora_inicio: e.target.value })
-                }
+                onChange={(e) => setFormData({ ...formData, hora_inicio: e.target.value })}
               />
             </div>
             <div className="space-y-2">
@@ -179,18 +171,13 @@ const AddCompanyServiceDialog: React.FC<AddCompanyServiceDialogProps> = ({
                 id="hora_final"
                 type="time"
                 value={formData.hora_final}
-                onChange={(e) =>
-                  setFormData({ ...formData, hora_final: e.target.value })
-                }
+                onChange={(e) => setFormData({ ...formData, hora_final: e.target.value })}
               />
             </div>
           </div>
+
           <DialogFooter>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => onOpenChange(false)}
-            >
+            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
               Cancelar
             </Button>
             <Button
@@ -208,4 +195,4 @@ const AddCompanyServiceDialog: React.FC<AddCompanyServiceDialogProps> = ({
   );
 };
 
-export default AddCompanyServiceDialog; 
+export default AddCompanyServiceDialog;
