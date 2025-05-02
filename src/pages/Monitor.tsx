@@ -124,8 +124,9 @@ const Monitor: React.FC = () => {
 
   // Query para buscar todas as empresas
   const { data: companiesList } = useQuery({
-    queryKey: ['companies'],
-    queryFn: companies.getAll,
+    queryKey: ['my-companies'],
+    queryFn: companies.getMine,
+    // queryFn: companies.getAll,
   });
 
   useEffect(() => {

@@ -70,7 +70,8 @@ export default function Relatorios() {
 
   const { data: companiesList } = useQuery({
     queryKey: ['companies'],
-    queryFn: companies.getAll,
+    queryFn: companies.getMine,
+    // queryFn: companies.getAll,
   });
 
   const { data: analytics } = useQuery({

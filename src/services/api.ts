@@ -143,6 +143,11 @@ export const companies = {
     return response.data;
   },
 
+  getMine: async (): Promise<Company[]> => {
+    const response = await api.get('/companies/my/my');
+    return response.data;
+  },
+
   getById: async (id: string): Promise<Company> => {
     const response = await api.get(`/companies/${id}`);
     return response.data;
