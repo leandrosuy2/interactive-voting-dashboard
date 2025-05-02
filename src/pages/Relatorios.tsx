@@ -640,64 +640,76 @@ export default function Relatorios() {
                 </div>
 
                 {/* Análise por Serviço */}
-                <Card className="border-2">
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <span className="text-2xl">🍽️</span>
-                      Análise por Serviço
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                      {Object.entries(analytics.votesByService)
-                        .filter(([_, data]) => data.serviceInfo)
-                        .map(([_, data]) => {
-                          const satisfactionPercent = data.percentuais.Ótimo + data.percentuais.Bom;
-                          return (
-                            <div key={data.serviceInfo?.nome} className="border rounded-lg p-4 hover:shadow-lg transition-shadow">
-                              <div className="flex items-center justify-between mb-4">
-                                <div>
-                                  <h3 className="text-lg font-semibold flex items-center gap-2">
-                                    <span className="text-2xl">{getServiceEmoji(data.serviceInfo?.nome || '')}</span>
-                                    {data.serviceInfo?.nome}
-                                  </h3>
-                                  <p className="text-sm text-muted-foreground">
-                                    {data.serviceInfo?.hora_inicio} - {data.serviceInfo?.hora_final}
-                                  </p>
-                                </div>
-                                <div className={`px-3 py-1 rounded-full text-sm font-medium ${satisfactionPercent >= 80 ? 'bg-green-100 text-green-800' :
-                                  satisfactionPercent >= 60 ? 'bg-blue-100 text-blue-800' :
-                                    satisfactionPercent >= 40 ? 'bg-yellow-100 text-yellow-800' :
-                                      'bg-red-100 text-red-800'
-                                  }`}>
-                                  {satisfactionPercent.toFixed(1)}%
-                                </div>
+                <CardContent>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {Object.entries(analytics.votesByService)
+                      .filter(([_, data]) => data.serviceInfo)
+                      .map(([_, data]) => {
+                        const satisfactionPercent = data.percentuais.Ótimo + data.percentuais.Bom;
+                        return (
+                          <div key={data.serviceInfo?.nome} className="border rounded-lg p-4 hover:shadow-lg transition-shadow">
+                            <div className="flex items-center justify-between mb-4">
+                              <div>
+                                <h3 className="text-lg font-semibold flex items-center gap-2">
+                                  <span className="text-2xl">{getServiceEmoji(data.serviceInfo?.nome || '')}</span>
+                                  {data.serviceInfo?.nome}
+                                </h3>
+                                <p className="text-sm text-muted-foreground">
+                                  {data.serviceInfo?.hora_inicio} - {data.serviceInfo?.hora_final}
+                                </p>
                               </div>
-                              <div className="space-y-2">
-                                {Object.entries(data.avaliacoes).map(([rating, count]) => (
-                                  <div
-                                    key={rating}
-                                    className={`flex items-center justify-between p-2 rounded-lg ${getRatingColor(rating)}`}
-                                  >
-                                    <div className="flex items-center gap-2">
-                                      <span className="text-xl">{getRatingEmoji(rating)}</span>
-                                      <span className="font-medium">{rating}</span>
-                                    </div>
-                                    <div className="flex items-center gap-2">
-                                      <span className="font-bold">{count}</span>
-                                      <span className="text-sm text-muted-foreground">
-                                        ({data.percentuais[rating as keyof typeof data.percentuais].toFixed(1)}%)
-                                      </span>
-                                    </div>
-                                  </div>
-                                ))}
+                              <div className={`px-3 py-1 rounded-full text-sm font-medium ${satisfactionPercent >= 80 ? 'bg-green-100 text-green-800' :
+                                satisfactionPercent >= 60 ? 'bg-blue-100 text-blue-800' :
+                                  satisfactionPercent >= 40 ? 'bg-yellow-100 text-yellow-800' :
+                                    'bg-red-100 text-red-800'
+                                }`}>
+                                {satisfactionPercent.toFixed(1)}%
                               </div>
                             </div>
-                          );
-                        })}
-                    </div>
-                  </CardContent>
-                </Card>
+
+                            <div className="space-y-2">
+                              {Object.entries(data.avaliacoes).map(([rating, count]) => (
+                                <div
+                                  key={rating}
+                                  className={`flex items-center justify-between p-2 rounded-lg ${getRatingColor(rating)}`}
+                                >
+                                  <div className="flex items-center gap-2">
+                                    <span className="text-xl">{getRatingEmoji(rating)}</span>
+                                    <span className="font-medium">{rating}</span>
+                                  </div>
+                                  <div className="flex items-center gap-2">
+                                    <span className="font-bold">{count}</span>
+                                    <span className="text-sm text-muted-foreground">
+                                      ({data.percentuais[rating as keyof typeof data.percentuais].toFixed(1)}%)
+                                    </span>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+
+                            {/* Blocos adicionais */}
+                            <div className="grid grid-cols-3 gap-2 mt-4">
+                              <div className="bg-green-100 text-green-800 text-center p-3 rounded-lg shadow">
+                                <p className="text-sm font-semibold">Qtd. de Votos</p>
+                                <p className="text-xl font-bold">{data.total}</p>
+                              </div>
+                              <div className="bg-yellow-100 text-yellow-800 text-center p-3 rounded-lg shadow">
+                                <p className="text-sm font-semibold">Qtd. Refeições</p>
+                                <p className="text-xl font-bold">{data.serviceInfo?.qtd_ref || 0}</p>
+                              </div>
+                              <div className="bg-red-100 text-red-800 text-center p-3 rounded-lg shadow">
+                                <p className="text-sm font-semibold">Diferença</p>
+                                <p className="text-xl font-bold">
+                                  {(data.serviceInfo?.qtd_ref || 0) - data.total}
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                  </div>
+                </CardContent>
+
 
                 {/* Pontos de Atenção */}
                 <Card className="border-2">

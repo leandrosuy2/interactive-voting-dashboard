@@ -46,6 +46,7 @@ export interface VoteAnalytics {
       nome: string;
       hora_inicio: string;
       hora_final: string;
+      qtd_ref?: number; // adicionado aqui
     };
   }>;
   votesByDay: {
@@ -55,7 +56,7 @@ export interface VoteAnalytics {
     bom: number;
     regular: number;
     total: number;
-  }[]; // <-- Adicionado aqui!
+  }[];
 }
 
 export interface ProcessedVote {
