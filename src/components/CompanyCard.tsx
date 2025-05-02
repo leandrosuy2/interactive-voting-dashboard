@@ -205,7 +205,7 @@ const CompanyCard: React.FC<CompanyCardProps> = ({
                     <div key={service.id} className="flex items-center justify-between p-2 bg-secondary/20 rounded group">
                       <div className="flex-1">
                         <p className="font-medium">{service.nome}</p>
-                        <p className="text-sm text-muted-foreground">Tipo: {getServiceTypeName(service.tipo_servico)}</p>
+                        <p className="text-sm text-muted-foreground">qtd: {getServiceTypeName(service.qtd_ref)}</p>
                       </div>
                       <div className="flex items-center gap-4">
                         <div className="flex items-center gap-2 text-sm text-muted-foreground">

@@ -46,6 +46,7 @@ const AddCompanyServiceDialog: React.FC<AddCompanyServiceDialogProps> = ({
     hora_inicio: '',
     hora_final: '',
     user_add: 'admin',
+    qtd_ref: 0,
   });
 
   const { data: serviceTypesData, isLoading: isLoadingServiceTypes } = useQuery({
@@ -61,6 +62,7 @@ const AddCompanyServiceDialog: React.FC<AddCompanyServiceDialogProps> = ({
         hora_inicio: service.hora_inicio,
         hora_final: service.hora_final,
         user_add: service.user_add,
+        qtd_ref: service.qtd_ref || 0, // ✅ presente no modo edição
       });
     } else {
       setFormData({
@@ -69,6 +71,7 @@ const AddCompanyServiceDialog: React.FC<AddCompanyServiceDialogProps> = ({
         hora_inicio: '',
         hora_final: '',
         user_add: 'admin',
+        qtd_ref: 0, // ✅ também presente no modo criação
       });
     }
   }, [service]);
@@ -174,6 +177,16 @@ const AddCompanyServiceDialog: React.FC<AddCompanyServiceDialogProps> = ({
                 onChange={(e) => setFormData({ ...formData, hora_final: e.target.value })}
               />
             </div>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="qtd_ref">Quantidade de Refeições</Label>
+            <Input
+              id="qtd_ref"
+              type="number"
+              value={formData.qtd_ref}
+              onChange={(e) => setFormData({ ...formData, qtd_ref: Number(e.target.value) })}
+              placeholder="Digite a quantidade de refeições"
+            />
           </div>
 
           <DialogFooter>

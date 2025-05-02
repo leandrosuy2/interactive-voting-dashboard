@@ -41,6 +41,7 @@ export interface CompanyService {
   hora_final: string;
   user_add: string;
   created_at: string;
+  qtd_ref: number;
 }
 
 export interface CreateCompanyRequest {
@@ -85,4 +86,5 @@ export interface CreateCompanyServiceRequest {
   hora_inicio: string;
   hora_final: string;
   user_add: string;
+  qtd_ref: number;
 } 
