@@ -1,4 +1,17 @@
+// import { useEffect } from 'react';
+// import { useNavigate } from 'react-router-dom';
 
+// const Index = () => {
+//   const navigate = useNavigate();
+
+//   useEffect(() => {
+//     navigate('/login');
+//   }, [navigate]);
+
+//   return null; // ou um loader se quiser
+// };
+
+// export default Index;
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -17,7 +30,7 @@ const Index = () => {
             <Activity className="h-6 w-6 text-primary" />
             <span className="text-xl font-semibold">Satisfaction</span>
           </div>
-          
+
           <div className="flex items-center gap-4">
             <ThemeToggle />
             {isAuthenticated ? (
@@ -40,7 +53,7 @@ const Index = () => {
           </div>
         </div>
       </header>
-      
+
       <main className="flex-1">
         <section className="py-20 px-4">
           <div className="container mx-auto max-w-5xl animate-fade-in">
@@ -51,7 +64,7 @@ const Index = () => {
               <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
                 Acompanhe a satisfação de clientes em tempo real, visualize estatísticas e gerencie feedback de empresas em uma interface elegante e intuitiva.
               </p>
-              
+
               <div className="mt-10 flex flex-col sm:flex-row gap-4 justify-center">
                 {isAuthenticated ? (
                   <Link to="/dashboard">
@@ -77,7 +90,7 @@ const Index = () => {
                 )}
               </div>
             </div>
-            
+
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mt-16">
               <div className="glass-card p-6 rounded-lg hover:shadow-md transition-shadow border border-border/40">
                 <div className="bg-primary/10 p-3 rounded-full w-12 h-12 flex items-center justify-center mb-4">
@@ -88,7 +101,7 @@ const Index = () => {
                   Visualize os resultados das avaliações instantaneamente à medida que novos feedbacks são registrados.
                 </p>
               </div>
-              
+
               <div className="glass-card p-6 rounded-lg hover:shadow-md transition-shadow border border-border/40">
                 <div className="bg-primary/10 p-3 rounded-full w-12 h-12 flex items-center justify-center mb-4">
                   <Activity className="text-primary h-6 w-6" />
@@ -98,7 +111,7 @@ const Index = () => {
                   Acesse gráficos interativos e relatórios detalhados para entender melhor a satisfação dos clientes.
                 </p>
               </div>
-              
+
               <div className="glass-card p-6 rounded-lg hover:shadow-md transition-shadow border border-border/40">
                 <div className="bg-primary/10 p-3 rounded-full w-12 h-12 flex items-center justify-center mb-4">
                   <Check className="text-primary h-6 w-6" />
@@ -111,7 +124,7 @@ const Index = () => {
             </div>
           </div>
         </section>
-        
+
         <section className="py-16 bg-secondary/70">
           <div className="container mx-auto px-4 max-w-5xl">
             <div className="text-center mb-12">
@@ -120,7 +133,7 @@ const Index = () => {
                 Nosso sistema de avaliação interativo é simples de usar e oferece resultados imediatos.
               </p>
             </div>
-            
+
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               <div className="bg-background/80 p-6 rounded-lg backdrop-blur-sm">
                 <div className="inline-flex items-center justify-center rounded-full w-10 h-10 bg-primary text-primary-foreground font-bold mb-4">
@@ -131,7 +144,7 @@ const Index = () => {
                   Registre-se no sistema e comece a explorar as funcionalidades disponíveis.
                 </p>
               </div>
-              
+
               <div className="bg-background/80 p-6 rounded-lg backdrop-blur-sm">
                 <div className="inline-flex items-center justify-center rounded-full w-10 h-10 bg-primary text-primary-foreground font-bold mb-4">
                   2
@@ -141,7 +154,7 @@ const Index = () => {
                   Adicione empresas e tipos de serviços que serão avaliados pelos clientes.
                 </p>
               </div>
-              
+
               <div className="bg-background/80 p-6 rounded-lg backdrop-blur-sm">
                 <div className="inline-flex items-center justify-center rounded-full w-10 h-10 bg-primary text-primary-foreground font-bold mb-4">
                   3
@@ -152,7 +165,7 @@ const Index = () => {
                 </p>
               </div>
             </div>
-            
+
             <div className="mt-12 text-center">
               <Link to={isAuthenticated ? "/dashboard" : "/register"}>
                 <Button size="lg" className="px-8">
@@ -163,7 +176,7 @@ const Index = () => {
           </div>
         </section>
       </main>
-      
+
       <footer className="border-t py-8 px-4">
         <div className="container mx-auto text-center">
           <p className="text-muted-foreground text-sm">

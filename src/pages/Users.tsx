@@ -199,6 +199,7 @@ export default function Users() {
         perfil_acesso: data.perfil_acesso,
       };
 
+
       console.log('Dados formatados para o backend:', userData);
 
       // Cria o usuário
@@ -244,7 +245,11 @@ export default function Users() {
         setor: data.setor,
         image: data.image,
         perfil_acesso: data.perfil_acesso,
+
       };
+      if (data.password && data.password.trim() !== '') {
+        userData.password = data.password;
+      }
 
       console.log('Dados formatados para o backend:', userData);
 

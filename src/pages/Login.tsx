@@ -107,7 +107,7 @@ const Login: React.FC = () => {
             </button>
           </form>
 
-          <div className="mt-6 text-center">
+          {/* <div className="mt-6 text-center">
             <p className="text-sm text-gray-600">
               Não tem uma conta?{' '}
               <button
@@ -117,7 +117,7 @@ const Login: React.FC = () => {
                 Crie uma
               </button>
             </p>
-          </div>
+          </div> */}
         </div>
       </div>
     </div>

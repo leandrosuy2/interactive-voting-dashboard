@@ -29,6 +29,8 @@ import { Company } from '@/types/company';
 import { ServiceType } from '@/types/serviceType';
 import { VoteCharts } from '@/components/VoteCharts';
 import { NewsTicker } from '@/components/NewsTicker';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '@/context/AuthContext';
 
 interface CompanyVotes {
   name: string;
@@ -56,6 +58,18 @@ const Dashboard: React.FC = () => {
     month: 0
   });
   const [companiesList, setCompaniesList] = useState<Company[]>([]);
+
+
+  const { hasPermission } = useAuth();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (!hasPermission('dashboard')) {
+      if (hasPermission('gestao')) {
+        navigate('/monitor');
+      }
+    }
+  }, [hasPermission, navigate]);
 
   const fetchData = async () => {
     try {

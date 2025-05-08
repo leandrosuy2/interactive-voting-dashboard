@@ -27,9 +27,9 @@ const Companies: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCompany, setSelectedCompany] = useState<Company | undefined>();
 
-  const { 
-    data: companiesData, 
-    isLoading: companiesLoading, 
+  const {
+    data: companiesData,
+    isLoading: companiesLoading,
     error: companiesError,
     refetch: refetchCompanies
   } = useQuery({
@@ -98,7 +98,7 @@ const Companies: React.FC = () => {
               <RefreshCw className="h-4 w-4" />
               <span>Atualizar</span>
             </Button>
-            <Button 
+            <Button
               onClick={() => {
                 setSelectedCompany(undefined);
                 setIsAddCompanyOpen(true);
@@ -124,8 +124,8 @@ const Companies: React.FC = () => {
         {companiesLoading ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {[...Array(8)].map((_, index) => (
-              <div 
-                key={index} 
+              <div
+                key={index}
                 className="h-[160px] rounded-lg bg-secondary/30 animate-pulse"
               />
             ))}
@@ -133,9 +133,9 @@ const Companies: React.FC = () => {
         ) : companiesError ? (
           <div className="text-center py-12">
             <p className="text-destructive text-lg">Erro ao carregar empresas</p>
-            <Button 
-              variant="outline" 
-              onClick={() => refetchCompanies()} 
+            <Button
+              variant="outline"
+              onClick={() => refetchCompanies()}
               className="mt-4"
             >
               Tentar novamente
@@ -178,14 +178,14 @@ const Companies: React.FC = () => {
         )}
       </div>
 
-      <AddCompanyDialog 
-        open={isAddCompanyOpen} 
+      <AddCompanyDialog
+        open={isAddCompanyOpen}
         onOpenChange={setIsAddCompanyOpen}
         onSuccess={() => {
           refetchCompanies();
           toast({
             title: selectedCompany ? "Empresa atualizada" : "Empresa adicionada",
-            description: selectedCompany 
+            description: selectedCompany
               ? "Empresa atualizada com sucesso"
               : "Empresa adicionada com sucesso",
           });

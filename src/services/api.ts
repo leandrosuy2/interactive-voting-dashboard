@@ -159,7 +159,8 @@ export const companies = {
   },
 
   update: async (id: string, data: UpdateCompanyRequest): Promise<Company> => {
-    const response = await api.patch(`/companies/${id}`, data);
+    // const response = await api.patch(`/companies/${id}`, data);
+    const response = await api.put(`/companies/${id}`, data);
     return response.data;
   },
 
