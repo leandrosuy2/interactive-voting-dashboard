@@ -890,7 +890,7 @@ const Monitor: React.FC = () => {
             </div>
           </CardHeader>
           <CardContent>
-            <VoteStats votes={filteredVotes} />
+            <VoteStats votes={filteredVotes.filter(vote => vote.avaliacao !== 'Ruim')} />
           </CardContent>
         </Card>
 

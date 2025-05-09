@@ -147,7 +147,7 @@ const VoteStats: React.FC<VoteStatsProps> = ({ votes }) => {
       </Card>
 
       {/* Ruim */}
-      <Card className="bg-gradient-to-br from-red-500/5 to-red-500/10">
+      {/* <Card className="bg-gradient-to-br from-red-500/5 to-red-500/10">
         <CardContent className="pt-4">
           <div className="flex flex-col items-center text-center space-y-1">
             <span className="text-2xl">😢</span>
@@ -159,7 +159,7 @@ const VoteStats: React.FC<VoteStatsProps> = ({ votes }) => {
             <Progress value={getPercentage(stats.ruim)} className="w-full h-1 bg-red-100" />
           </div>
         </CardContent>
-      </Card>
+      </Card>*/}
 
       {/* Total */}
       <Card className="bg-gradient-to-br from-primary/5 to-primary/10">
