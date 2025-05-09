@@ -279,7 +279,7 @@ const Monitor: React.FC = () => {
       'Ótimo': 5,
       'Bom': 4,
       'Regular': 3,
-      'Ruim': 2,
+      // 'Ruim': 2,
     };
 
     let totalWeight = 0;
@@ -545,8 +545,8 @@ const Monitor: React.FC = () => {
         return 4;
       case 'Regular':
         return 3;
-      case 'Ruim':
-        return 2;
+      // case 'Ruim':
+      //   return 2;
       default:
         return 0;
     }
@@ -560,8 +560,8 @@ const Monitor: React.FC = () => {
         return 'text-blue-500';
       case 'Regular':
         return 'text-yellow-500';
-      case 'Ruim':
-        return 'text-red-500';
+      // case 'Ruim':
+      //   return 'text-red-500';
       default:
         return 'text-muted-foreground';
     }
@@ -582,8 +582,8 @@ const Monitor: React.FC = () => {
         return <ThumbsUp className="h-4 w-4" />;
       case 'Regular':
         return <Star className="h-4 w-4" />;
-      case 'Ruim':
-        return <ThumbsDown className="h-4 w-4" />;
+      // case 'Ruim':
+      //   return <ThumbsDown className="h-4 w-4" />;
       default:
         return null;
     }
