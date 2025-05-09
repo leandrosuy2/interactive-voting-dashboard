@@ -86,7 +86,7 @@ const VoteStats: React.FC<VoteStatsProps> = ({ votes }) => {
   };
 
   return (
-    <div className="grid grid-cols-6 gap-2">
+    <div className="grid grid-cols-5 gap-2">
       {/* Satisfação Geral */}
       <Card className="bg-gradient-to-br from-primary/5 to-primary/10">
         <CardContent className="pt-4">
