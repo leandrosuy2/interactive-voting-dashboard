@@ -8,6 +8,7 @@ import { useToast } from '@/hooks/use-toast';
 import Navbar from '@/components/Navbar';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { isToday } from 'date-fns';
 import {
   RefreshCw,
   TrendingUp,
@@ -503,40 +504,21 @@ const Monitor: React.FC = () => {
   //     isWithinInterval(new Date(vote.momento_voto), { start: startDate, end: latestVoteDate })
   //   );
   // };
+
+
   const getFilteredVotes = (votes: Vote[]) => {
     if (!votes || votes.length === 0) return [];
 
-    // 🔒 Se estiver em intervalo, retorna zero votos
     if (!activeService) return [];
-
-    const latestVoteDate = new Date(Math.max(...votes.map(v => new Date(v.momento_voto).getTime())));
-    let startDate: Date;
-
-    switch (timeRange) {
-      case '1h':
-        startDate = subHours(latestVoteDate, 1);
-        break;
-      case '24h':
-        startDate = subHours(latestVoteDate, 24);
-        break;
-      case '7d':
-        startDate = subDays(latestVoteDate, 7);
-        break;
-      case '30d':
-        startDate = subDays(latestVoteDate, 30);
-        break;
-    }
 
     const serviceVotes = analytics?.votesByService[activeService.id]?.votes || [];
 
+    const today = new Date().toISOString().slice(0, 10); // Ex: "2025-05-09"
+
     return serviceVotes.filter((vote) =>
-      isWithinInterval(new Date(vote.momento_voto), {
-        start: startDate,
-        end: latestVoteDate,
-      })
+      vote.momento_voto.slice(0, 10) === today
     );
   };
-
   const getRatingValue = (avaliacao: string): number => {
     switch (avaliacao) {
       case 'Ótimo':
@@ -651,7 +633,7 @@ const Monitor: React.FC = () => {
     return (
       <div className="min-h-screen bg-background flex flex-col">
         <Navbar />
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-24">
+        <div className="w-full px-6 py-24">
           <div className="flex flex-col items-center justify-center space-y-4">
             <AlertTriangle className="h-12 w-12 text-destructive" />
             <h2 className="text-2xl font-semibold">Erro ao carregar dados</h2>
@@ -672,7 +654,7 @@ const Monitor: React.FC = () => {
     return (
       <div className="min-h-screen bg-background flex flex-col">
         <Navbar />
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-24">
+        <div className="w-full px-6 py-24">
           <div className="flex flex-col items-center justify-center space-y-4">
             <Building2 className="h-12 w-12 text-muted-foreground" />
             <h2 className="text-2xl font-semibold">Selecione uma empresa</h2>
@@ -701,7 +683,7 @@ const Monitor: React.FC = () => {
     return (
       <div className="min-h-screen bg-background flex flex-col">
         <Navbar />
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-24">
+        <div className="w-full px-6 py-24">
           <div className="flex items-center justify-center h-64">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
           </div>
@@ -717,7 +699,7 @@ const Monitor: React.FC = () => {
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <Navbar />
-      <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-24">
+      <div className="w-full px-6 py-24">
         <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-8">
           <div>
             <div className="flex items-center space-x-4">
@@ -728,7 +710,7 @@ const Monitor: React.FC = () => {
                 <h1 className="text-3xl font-bold tracking-tight">Monitor</h1>
                 <p className="text-muted-foreground">
                   {selectedCompanyId
-                    ? `Monitoramento de ${companiesList?.find(c => c.id === selectedCompanyId)?.nome}`
+                    ? `Monitoramento de ${companiesList?.find(c => c.id === selectedCompanyId)?.nome} (${companiesList?.find(c => c.id === selectedCompanyId)?.qtdbutao ?? 0} botões)`
                     : 'Monitoramento Geral'}
                 </p>
               </div>
@@ -816,7 +798,7 @@ const Monitor: React.FC = () => {
         </div> */}
 
         {/* Alertas */}
-        {alerts.length > 0 && (
+        {/* {alerts.length > 0 && (
           <div className="mb-8 space-y-4">
             {alerts.map((alert, index) => (
               <Alert
@@ -843,7 +825,7 @@ const Monitor: React.FC = () => {
               </Alert>
             ))}
           </div>
-        )}
+        )} */}
 
         {/* Serviço Atual
         {selectedCompany && (
@@ -890,13 +872,16 @@ const Monitor: React.FC = () => {
             </div>
           </CardHeader>
           <CardContent>
-            <VoteStats votes={filteredVotes.filter(vote => vote.avaliacao !== 'Ruim')} />
+            <VoteStats
+              votes={filteredVotes.filter(vote => vote.avaliacao !== 'Ruim')}
+              qtdbutao={companiesList?.find(c => c.id === selectedCompanyId)?.qtdbutao ?? 0}
+            />
           </CardContent>
         </Card>
 
 
         {/* Status em tempo real */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8 mt-8">
+        {/* <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8 mt-8">
           <Card className="bg-gradient-to-br from-primary/5 to-primary/10">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Status</CardTitle>
@@ -966,10 +951,10 @@ const Monitor: React.FC = () => {
               </div>
             </CardContent>
           </Card>
-        </div>
+        </div> */}
 
         {/* Votos recentes com indicadores */}
-        <Card className="mt-8 bg-gradient-to-br from-primary/5 to-primary/10">
+        {/* <Card className="mt-8 bg-gradient-to-br from-primary/5 to-primary/10">
           <CardHeader>
             <div className="flex items-center space-x-2">
               <Zap className="h-5 w-5 text-primary" />
@@ -979,7 +964,7 @@ const Monitor: React.FC = () => {
           <CardContent>
             <VoteFloatingBars votes={filteredVotes} height={300} />
           </CardContent>
-        </Card>
+        </Card> */}
       </div>
     </div>
   );

@@ -595,39 +595,65 @@ export default function Users() {
                       <FormField
                         control={form.control}
                         name="empresas"
-                        render={({ field }) => (
-                          <FormItem className="col-span-full">
-                            <FormLabel>Empresas</FormLabel>
-                            <FormControl>
-                              <select
-                                multiple
-                                {...field}
-                                value={field.value || []}
-                                onChange={(e) => {
-                                  const selectedOptions = Array.from(e.target.selectedOptions).map(
-                                    (option) => option.value
-                                  );
-                                  console.log('Empresas selecionadas:', selectedOptions);
-                                  field.onChange(selectedOptions);
-                                }}
-                                className="flex h-32 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                              >
-                                {companiesList?.map((company) => (
-                                  <option
-                                    key={company.id}
-                                    value={company.id}
-                                  >
-                                    {company.nome}
-                                  </option>
+                        render={({ field }) => {
+                          const [search, setSearch] = useState('');
+                          const allCompanyIds = companiesList?.map((c) => c.id) || [];
+                          const filteredCompanies = companiesList?.filter(company =>
+                            company.nome.toLowerCase().includes(search.toLowerCase())
+                          ) || [];
+
+                          const allSelected = field.value?.length === allCompanyIds.length;
+                          const toggleAll = () => {
+                            if (allSelected) {
+                              field.onChange([]);
+                            } else {
+                              field.onChange(allCompanyIds);
+                            }
+                          };
+
+                          return (
+                            <FormItem className="col-span-full">
+                              <FormLabel>Empresas</FormLabel>
+                              <div className="mb-2 flex items-center gap-2">
+                                <Input
+                                  placeholder="Buscar empresa..."
+                                  value={search}
+                                  onChange={(e) => setSearch(e.target.value)}
+                                />
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={toggleAll}
+                                >
+                                  {allSelected ? 'Desmarcar Todas' : 'Selecionar Todas'}
+                                </Button>
+                              </div>
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-2 max-h-40 overflow-y-auto border rounded-md p-2">
+                                {filteredCompanies.map((company) => (
+                                  <label key={company.id} className="flex items-center gap-2">
+                                    <input
+                                      type="checkbox"
+                                      value={company.id}
+                                      checked={field.value?.includes(company.id)}
+                                      onChange={(e) => {
+                                        const newValue = e.target.checked
+                                          ? [...field.value, company.id]
+                                          : field.value.filter((id) => id !== company.id);
+                                        field.onChange(newValue);
+                                      }}
+                                    />
+                                    <span>{company.nome}</span>
+                                  </label>
                                 ))}
-                              </select>
-                            </FormControl>
-                            <FormDescription>
-                              Segure CTRL (Windows) ou Command (Mac) para selecionar múltiplas empresas
-                            </FormDescription>
-                            <FormMessage />
-                          </FormItem>
-                        )}
+                              </div>
+                              <FormDescription>
+                                Use o campo de busca para filtrar e o botão para selecionar tudo.
+                              </FormDescription>
+                              <FormMessage />
+                            </FormItem>
+                          );
+                        }}
                       />
                     </div>
                   </TabsContent>
@@ -801,43 +827,66 @@ export default function Users() {
                         control={updateForm.control}
                         name="empresas"
                         render={({ field }) => {
-                          console.log('Field value:', field.value);
-                          console.log('Companies list:', companiesList);
+                          const [search, setSearch] = useState('');
+                          const allCompanyIds = companiesList?.map((c) => c.id) || [];
+                          const filteredCompanies = companiesList?.filter(company =>
+                            company.nome.toLowerCase().includes(search.toLowerCase())
+                          ) || [];
+
+                          const allSelected = field.value?.length === allCompanyIds.length;
+                          const toggleAll = () => {
+                            if (allSelected) {
+                              field.onChange([]);
+                            } else {
+                              field.onChange(allCompanyIds);
+                            }
+                          };
+
                           return (
                             <FormItem className="col-span-full">
                               <FormLabel>Empresas</FormLabel>
-                              <FormControl>
-                                <select
-                                  multiple
-                                  {...field}
-                                  value={field.value || []}
-                                  onChange={(e) => {
-                                    const selectedOptions = Array.from(e.target.selectedOptions).map(
-                                      (option) => option.value
-                                    );
-                                    console.log('Empresas selecionadas:', selectedOptions);
-                                    field.onChange(selectedOptions);
-                                  }}
-                                  className="flex h-32 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                              <div className="mb-2 flex items-center gap-2">
+                                <Input
+                                  placeholder="Buscar empresa..."
+                                  value={search}
+                                  onChange={(e) => setSearch(e.target.value)}
+                                />
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={toggleAll}
                                 >
-                                  {companiesList?.map((company) => (
-                                    <option
-                                      key={company.id}
+                                  {allSelected ? 'Desmarcar Todas' : 'Selecionar Todas'}
+                                </Button>
+                              </div>
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-2 max-h-40 overflow-y-auto border rounded-md p-2">
+                                {filteredCompanies.map((company) => (
+                                  <label key={company.id} className="flex items-center gap-2">
+                                    <input
+                                      type="checkbox"
                                       value={company.id}
-                                    >
-                                      {company.nome}
-                                    </option>
-                                  ))}
-                                </select>
-                              </FormControl>
+                                      checked={field.value?.includes(company.id)}
+                                      onChange={(e) => {
+                                        const newValue = e.target.checked
+                                          ? [...field.value, company.id]
+                                          : field.value.filter((id) => id !== company.id);
+                                        field.onChange(newValue);
+                                      }}
+                                    />
+                                    <span>{company.nome}</span>
+                                  </label>
+                                ))}
+                              </div>
                               <FormDescription>
-                                Segure CTRL (Windows) ou Command (Mac) para selecionar múltiplas empresas
+                                Use o campo de busca para filtrar e o botão para selecionar tudo.
                               </FormDescription>
                               <FormMessage />
                             </FormItem>
                           );
                         }}
                       />
+
                     </div>
                   </TabsContent>
                   <TabsContent value="acesso">

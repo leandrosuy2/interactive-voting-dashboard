@@ -6,9 +6,11 @@ import { cn } from '@/lib/utils';
 
 interface VoteStatsProps {
   votes: Vote[];
+  qtdbutao: number;
 }
 
-const VoteStats: React.FC<VoteStatsProps> = ({ votes }) => {
+
+const VoteStats: React.FC<VoteStatsProps> = ({ votes, qtdbutao }) => {
   console.log('VoteStats received votes:', votes);
   console.log('VoteStats votes length:', votes.length);
   console.log('VoteStats votes types:', votes.map(v => v.avaliacao));
@@ -86,15 +88,15 @@ const VoteStats: React.FC<VoteStatsProps> = ({ votes }) => {
   };
 
   return (
-    <div className="grid grid-cols-5 gap-2">
+    <div className={`grid ${qtdbutao === 4 ? 'grid-cols-6' : 'grid-cols-5'} gap-4 w-full max-w-none`}>
       {/* Satisfação Geral */}
-      <Card className="bg-gradient-to-br from-primary/5 to-primary/10">
+      <Card className="bg-gradient-to-br from-primary/5 to-primary/10 min-h-[280px]">
         <CardContent className="pt-4">
           <div className="flex flex-col items-center text-center space-y-1">
-            <span className="text-2xl">😋</span>
+            <span className="text-8xl">😋</span>
             <div className="space-y-0.5">
-              <p className="text-xs text-muted-foreground">Satisfação</p>
-              <p className="text-lg font-bold">{satisfactionRate.toFixed(1)}%</p>
+              <p className="text-4xl text-muted-foreground">Satisfação</p>
+              <p className="text-7xl font-bold">{satisfactionRate.toFixed(1)}%</p>
             </div>
             <Progress value={satisfactionRate} className="w-full h-1" />
           </div>
@@ -102,14 +104,14 @@ const VoteStats: React.FC<VoteStatsProps> = ({ votes }) => {
       </Card>
 
       {/* Ótimo */}
-      <Card className="bg-gradient-to-br from-green-500/5 to-green-500/10">
+      <Card className="bg-gradient-to-br from-green-500/5 to-green-500/10 min-h-[280px]">
         <CardContent className="pt-4">
           <div className="flex flex-col items-center text-center space-y-1">
-            <span className="text-2xl">😋</span>
+            <span className="text-8xl">😋</span>
             <div className="space-y-0.5">
-              <p className="text-xs text-muted-foreground">Ótimo</p>
-              <p className="text-lg font-bold text-green-500">{stats.otimo}</p>
-              <p className="text-xs text-muted-foreground">{getPercentage(stats.otimo).toFixed(1)}%</p>
+              <p className="text-4xl text-muted-foreground">Ótimo</p>
+              <p className="text-6xl font-bold text-green-500">{stats.otimo}</p>
+              <p className="text-3xl text-muted-foreground">{getPercentage(stats.otimo).toFixed(1)}%</p>
             </div>
             <Progress value={getPercentage(stats.otimo)} className="w-full h-1 bg-green-100" />
           </div>
@@ -117,14 +119,14 @@ const VoteStats: React.FC<VoteStatsProps> = ({ votes }) => {
       </Card>
 
       {/* Bom */}
-      <Card className="bg-gradient-to-br from-blue-500/5 to-blue-500/10">
+      <Card className="bg-gradient-to-br from-blue-500/5 to-blue-500/10 min-h-[280px]" >
         <CardContent className="pt-4">
           <div className="flex flex-col items-center text-center space-y-1">
-            <span className="text-2xl">😃</span>
+            <span className="text-8xl">😃</span>
             <div className="space-y-0.5">
-              <p className="text-xs text-muted-foreground">Bom</p>
-              <p className="text-lg font-bold text-blue-500">{stats.bom}</p>
-              <p className="text-xs text-muted-foreground">{getPercentage(stats.bom).toFixed(1)}%</p>
+              <p className="text-4xl text-muted-foreground">Bom</p>
+              <p className="text-6xl font-bold text-blue-500">{stats.bom}</p>
+              <p className="text-3xl text-muted-foreground">{getPercentage(stats.bom).toFixed(1)}%</p>
             </div>
             <Progress value={getPercentage(stats.bom)} className="w-full h-1 bg-blue-100" />
           </div>
@@ -132,14 +134,14 @@ const VoteStats: React.FC<VoteStatsProps> = ({ votes }) => {
       </Card>
 
       {/* Regular */}
-      <Card className="bg-gradient-to-br from-yellow-500/5 to-yellow-500/10">
+      <Card className="bg-gradient-to-br from-yellow-500/5 to-yellow-500/10 min-h-[280px]">
         <CardContent className="pt-4">
           <div className="flex flex-col items-center text-center space-y-1">
-            <span className="text-2xl">😐</span>
+            <span className="text-8xl">😐</span>
             <div className="space-y-0.5">
-              <p className="text-xs text-muted-foreground">Regular</p>
-              <p className="text-lg font-bold text-yellow-500">{stats.regular}</p>
-              <p className="text-xs text-muted-foreground">{getPercentage(stats.regular).toFixed(1)}%</p>
+              <p className="text-4xl text-muted-foreground">Regular</p>
+              <p className="text-6xl font-bold text-yellow-500">{stats.regular}</p>
+              <p className="text-3xl text-muted-foreground">{getPercentage(stats.regular).toFixed(1)}%</p>
             </div>
             <Progress value={getPercentage(stats.regular)} className="w-full h-1 bg-yellow-100" />
           </div>
@@ -147,29 +149,31 @@ const VoteStats: React.FC<VoteStatsProps> = ({ votes }) => {
       </Card>
 
       {/* Ruim */}
-      {/* <Card className="bg-gradient-to-br from-red-500/5 to-red-500/10">
-        <CardContent className="pt-4">
-          <div className="flex flex-col items-center text-center space-y-1">
-            <span className="text-2xl">😢</span>
-            <div className="space-y-0.5">
-              <p className="text-xs text-muted-foreground">Ruim</p>
-              <p className="text-lg font-bold text-red-500">{stats.ruim}</p>
-              <p className="text-xs text-muted-foreground">{getPercentage(stats.ruim).toFixed(1)}%</p>
+      {qtdbutao === 4 && (
+        <Card className="bg-gradient-to-br from-red-500/5 to-red-500/10 min-h-[280px]">
+          <CardContent className="pt-4">
+            <div className="flex flex-col items-center text-center space-y-1">
+              <span className="text-8xl">😢</span>
+              <div className="space-y-0.5">
+                <p className="text-4xl text-muted-foreground">Ruim</p>
+                <p className="text-6xl	 font-bold text-red-500">{stats.ruim}</p>
+                <p className="text-3xl text-muted-foreground">{getPercentage(stats.ruim).toFixed(1)}%</p>
+              </div>
+              <Progress value={getPercentage(stats.ruim)} className="w-full h-1 bg-red-100" />
             </div>
-            <Progress value={getPercentage(stats.ruim)} className="w-full h-1 bg-red-100" />
-          </div>
-        </CardContent>
-      </Card>*/}
+          </CardContent>
+        </Card>
+      )}
 
       {/* Total */}
-      <Card className="bg-gradient-to-br from-primary/5 to-primary/10">
+      <Card className="bg-gradient-to-br from-primary/5 to-primary/10 min-h-[280px]">
         <CardContent className="pt-4">
           <div className="flex flex-col items-center text-center space-y-1">
-            <span className="text-2xl">📊</span>
+            <span className="text-8xl">📊</span>
             <div className="space-y-0.5">
-              <p className="text-xs text-muted-foreground">Total</p>
-              <p className="text-lg font-bold">{stats.total}</p>
-              <p className="text-xs text-muted-foreground">Votos</p>
+              <p className="text-4xl text-muted-foreground">Total</p>
+              <p className="text-6xl	 font-bold">{stats.total}</p>
+              <p className="text-3xl text-muted-foreground">Votos</p>
             </div>
           </div>
         </CardContent>

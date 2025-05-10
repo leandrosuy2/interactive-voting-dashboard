@@ -70,6 +70,7 @@ const AddCompanyDialog: React.FC<AddCompanyDialogProps> = ({
     user_edt: user?.username || '',
     user_add: user?.username || '',
     linha: 0,
+    qtdbutao: 3, // <== AQUI
   });
 
   const { data: lines } = useQuery({
@@ -102,6 +103,7 @@ const AddCompanyDialog: React.FC<AddCompanyDialogProps> = ({
         user_edt: user?.username || '',
         user_add: user?.username || '',
         linha: 0,
+        qtdbutao: 3, // <== AQUI
       });
     }
   }, [company, user?.username]);
@@ -180,6 +182,7 @@ const AddCompanyDialog: React.FC<AddCompanyDialogProps> = ({
     const dataToSubmit = {
       ...formData,
       qt_funcionarios: Number(formData.qt_funcionarios),
+      qtdbutao: Number(formData.qtdbutao), // <== AQUI
       user_add: user?.username || '',
     };
 
@@ -193,9 +196,9 @@ const AddCompanyDialog: React.FC<AddCompanyDialogProps> = ({
     const rawCep = e.target.value;
     const formattedCep = rawCep.replace(/\D/g, '').replace(/(\d{5})(\d)/, '$1-$2').slice(0, 9);
     const cleanedCep = formattedCep.replace(/\D/g, '');
-  
+
     setFormData((prev) => ({ ...prev, cep: formattedCep }));
-  
+
     if (cleanedCep.length === 8) {
       const address = await fetchAddress(cleanedCep);
       if (address) {
@@ -242,7 +245,7 @@ const AddCompanyDialog: React.FC<AddCompanyDialogProps> = ({
           </div>
           <div className="space-y-2">
             <Label htmlFor="cnpj">CNPJ</Label>
-             {/* No campo de CNPJ */}
+            {/* No campo de CNPJ */}
             <InputMask
               mask="99.999.999/9999-99"
               value={formData.cnpj}
@@ -261,6 +264,19 @@ const AddCompanyDialog: React.FC<AddCompanyDialogProps> = ({
               onChange={(e) => setFormData({ ...formData, qt_funcionarios: e.target.value })}
               required
             />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="qtdbutao">Quantidade de Botões</Label>
+            <select
+              id="qtdbutao"
+              value={formData.qtdbutao}
+              onChange={(e) => setFormData({ ...formData, qtdbutao: Number(e.target.value) })}
+              className="border border-gray-300 rounded px-3 py-2 w-full"
+              required
+            >
+              <option value={3}>3 botões</option>
+              <option value={4}>4 botões</option>
+            </select>
           </div>
           <div className="space-y-2">
             <div className="flex items-center space-x-2">
@@ -291,28 +307,28 @@ const AddCompanyDialog: React.FC<AddCompanyDialogProps> = ({
             />
           </div>
           {/* // Dentro do seu JSX */}
-        <div className="grid grid-cols-2 gap-4">
-          <div className="space-y-2">
-            <Label htmlFor="telcom">Telefone Comercial</Label>
-            <InputMask
-              mask="(99) 99999-9999"
-              value={formData.telcom}
-              onChange={(e) => setFormData({ ...formData, telcom: e.target.value })}
-            >
-              {(inputProps) => <Input {...inputProps} id="telcom" required />}
-            </InputMask>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="telcom">Telefone Comercial</Label>
+              <InputMask
+                mask="(99) 99999-9999"
+                value={formData.telcom}
+                onChange={(e) => setFormData({ ...formData, telcom: e.target.value })}
+              >
+                {(inputProps) => <Input {...inputProps} id="telcom" required />}
+              </InputMask>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="telcel">Telefone Celular</Label>
+              <InputMask
+                mask="(99) 99999-9999"
+                value={formData.telcel}
+                onChange={(e) => setFormData({ ...formData, telcel: e.target.value })}
+              >
+                {(inputProps) => <Input {...inputProps} id="telcel" required />}
+              </InputMask>
+            </div>
           </div>
-          <div className="space-y-2">
-            <Label htmlFor="telcel">Telefone Celular</Label>
-            <InputMask
-              mask="(99) 99999-9999"
-              value={formData.telcel}
-              onChange={(e) => setFormData({ ...formData, telcel: e.target.value })}
-            >
-              {(inputProps) => <Input {...inputProps} id="telcel" required />}
-            </InputMask>
-          </div>
-        </div>
         </div>
       ),
     },
@@ -425,13 +441,13 @@ const AddCompanyDialog: React.FC<AddCompanyDialogProps> = ({
               Anterior
             </Button>
             {currentStep === steps.length - 1 ? (
-              <Button 
-                type="submit" 
+              <Button
+                type="submit"
                 disabled={createMutation.isPending || updateMutation.isPending}
                 className="w-full sm:w-auto"
               >
-                {createMutation.isPending || updateMutation.isPending 
-                  ? (company ? 'Salvando...' : 'Criando...') 
+                {createMutation.isPending || updateMutation.isPending
+                  ? (company ? 'Salvando...' : 'Criando...')
                   : (company ? 'Salvar Alterações' : 'Criar Empresa')}
               </Button>
             ) : (

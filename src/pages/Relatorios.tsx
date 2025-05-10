@@ -315,7 +315,9 @@ export default function Relatorios() {
               className="space-y-6 bg-white p-6 rounded-lg shadow-sm"
             >
               <div className="mb-6">
-                <h2 className="text-2xl font-bold mb-2">{`Relatório de Satisfação - ${companiesList?.find(c => c.id === selectedCompany)?.nome || 'Geral'}`}</h2>
+                <h2 className="text-2xl font-bold mb-2">
+                  {`Relatório de Satisfação - ${companiesList?.find(c => c.id === selectedCompany)?.nome || 'Geral'} (${companiesList?.find(c => c.id === selectedCompany)?.qtdbutao ?? 0} botões)`}
+                </h2>
                 <p className="text-muted-foreground">{`Período: ${getPeriodText()}`}</p>
               </div>
               <div className="grid grid-cols-1 gap-6">
