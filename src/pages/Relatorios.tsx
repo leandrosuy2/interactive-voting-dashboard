@@ -12,6 +12,7 @@ import { VoteAnalytics } from '@/types/vote';
 import Navbar from '@/components/Navbar';
 import { ExportPDF } from '@/components/export-pdf';
 import { Progress } from "@/components/ui/progress";
+import { parseISO } from 'date-fns';
 
 import {
   BarChart as RechartsBarChart,
@@ -37,12 +38,7 @@ const COLORS = {
   'Ruim': '#ef4444'
 };
 
-const pesquisaDiariaData = [
-  { dia: '01', satisfeito: 85, melhorar: 15 },
-  { dia: '02', satisfeito: 82, melhorar: 18 },
-  { dia: '03', satisfeito: 78, melhorar: 22 },
-  // e assim até o dia 30
-];
+
 const dadosSemana = [
   { dia: 'Seg', semanaAnterior: 10, semanaAtual: 5 },
   { dia: 'Ter', semanaAnterior: 63, semanaAtual: 0 },
@@ -60,10 +56,12 @@ const dadosSemana = [
 export default function Relatorios() {
   const { id } = useParams();
   const contentRef = useRef<HTMLDivElement>(null);
-  const [dateRange, setDateRange] = useState<DateRange | undefined>({
-    from: new Date(),
-    to: addDays(new Date(), 7),
-  });
+  // const [dateRange, setDateRange] = useState<DateRange | undefined>({
+  //   from: new Date(),
+  //   to: addDays(new Date(), 7),
+  // });
+  // const [quickFilter, setQuickFilter] = useState('1d');
+  const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined);
   const [quickFilter, setQuickFilter] = useState('1d');
   const [selectedCompany, setSelectedCompany] = useState<string>(id || '');
   const [isExporting, setIsExporting] = useState(false);
@@ -101,14 +99,36 @@ export default function Relatorios() {
         }
       }
 
-      return votes.getAnalytics(selectedCompany, {
+      return votes.getAnalyticsRelatorio(selectedCompany, {
         startDate: format(startDate, 'yyyy-MM-dd'),
-        endDate: format(endDate, 'yyyy-MM-dd')
+        endDate: format(endDate, 'yyyy-MM-dd'),
       });
     },
     enabled: !!selectedCompany,
   });
 
+  // const pesquisaDiariaData = analytics?.votesByDay.map((day) => {
+  //   return {
+  //     dia: format(new Date(day.data), 'dd/MM'),
+  //     satisfeito: (day.otimo || 0) + (day.bom || 0),
+  //     melhorar: (day.regular || 0) + (day.ruim || 0),
+  //   };
+  // }) || [];
+  // const pesquisaDiariaData = (analytics?.votesByDay || [])
+  //   .sort((a, b) => new Date(a.data).getTime() - new Date(b.data).getTime()) // ordena por data crescente
+  //   .map((day) => ({
+  //     dia: format(new Date(day.data), 'dd/MM'),
+  //     satisfeito: (day.Ótimo || 0) + (day.Bom || 0),
+  //     melhorar: (day.Regular || 0) + (day.Ruim || 0),
+  //   }));
+
+  const pesquisaDiariaData = (analytics?.votesByDay || [])
+    .sort((a, b) => new Date(a.data + 'T00:00:00').getTime() - new Date(b.data + 'T00:00:00').getTime())
+    .map((day) => ({
+      dia: format(new Date(day.data + 'T00:00:00'), 'dd/MM'),
+      satisfeito: (day.Ótimo || 0) + (day.Bom || 0),
+      melhorar: (day.Regular || 0) + (day.Ruim || 0),
+    }));
 
 
   const pontosMelhoriaData = analytics ? Object.entries(analytics.avaliacoesPorTipo).map(([name, value]) => ({
@@ -126,6 +146,7 @@ export default function Relatorios() {
   const resultadoDiaDataFiltrado = resultadoDiaData.filter(entry => entry.value > 0);
 
   const votosPorDia = analytics?.votesByDay || [];
+  console.table(votosPorDia);
 
   const getPercentage = (value: number) => {
     if (!analytics?.totalVotes) return '0';
@@ -147,11 +168,30 @@ export default function Relatorios() {
     ? ((analytics.avaliacoesPorTipo.Ótimo + analytics.avaliacoesPorTipo.Bom) / analytics.totalVotes * 100)
     : 0;
 
+
   const getFileName = () => {
     const startDate = dateRange?.from ? format(dateRange.from, 'dd-MM-yyyy') : '';
     const endDate = dateRange?.to ? format(dateRange.to, 'dd-MM-yyyy') : '';
     return `relatorio-${startDate}-${endDate}.pdf`;
   };
+
+  const diasSelecionados = (() => {
+    if (dateRange?.from && dateRange?.to) {
+      const diffTime = Math.abs(dateRange.to.getTime() - dateRange.from.getTime());
+      return Math.max(Math.floor(diffTime / (1000 * 60 * 60 * 24)), 0); // personalizado: sem +1
+    }
+
+    switch (quickFilter) {
+      case '1d':
+        return 1;
+      case '7d':
+        return 7;
+      case '30d':
+        return 30;
+      default:
+        return 1;
+    }
+  })();
 
   const getServiceEmoji = (name: string) => {
     switch (name.toLowerCase()) {
@@ -397,14 +437,19 @@ export default function Relatorios() {
                     </div>
                   </CardHeader>
                   <CardContent>
-                    <div className="h-[400px]">
+                    <div className="h-[500px]"> {/* aumentei um pouco a altura */}
                       <ResponsiveContainer width="100%" height="100%">
                         <BarChart data={pesquisaDiariaData}>
                           <CartesianGrid strokeDasharray="3 3" />
-                          <XAxis dataKey="dia" />
-                          <YAxis domain={[0, 100]} tickFormatter={(tick) => `${tick}%`} />
-                          <Tooltip formatter={(value: number) => `${value}%`} />
-                          <Legend />
+                          <XAxis
+                            dataKey="dia"
+                            interval={0}
+                            angle={-45}
+                            textAnchor="end"
+                          />
+                          <YAxis />
+                          <Tooltip />
+                          <Legend wrapperStyle={{ marginTop: 30 }} />
                           <Bar dataKey="satisfeito" fill="#22c55e" name="Satisfeito" />
                           <Bar dataKey="melhorar" fill="#ef4444" name="Melhorar" />
                         </BarChart>
@@ -412,8 +457,10 @@ export default function Relatorios() {
                     </div>
                   </CardContent>
                 </Card>
+
+
                 {/* Gráfico de Pesquisa Semanal */}
-                <Card className="border-2">
+                {/* <Card className="border-2">
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2">
                       <span className="text-2xl">📈</span>
@@ -448,12 +495,13 @@ export default function Relatorios() {
                       </ResponsiveContainer>
                     </div>
                   </CardContent>
-                </Card>
+                </Card> */}
 
                 <Card className="border-2 w-full">
                   <CardHeader className="pb-2">
                     <h2 className="text-2xl font-bold text-center">
-                      Resultado do Dia: {format(new Date(), 'dd MMM/yyyy')}
+                      Resultado do Dia
+                      {/* : {format(new Date(), 'dd MMM/yyyy')} */}
                     </h2>
                   </CardHeader>
                   <CardContent>
@@ -483,7 +531,7 @@ export default function Relatorios() {
                       </table>
                     </div>
 
-                    <div className="flex justify-center gap-4 mt-6">
+                    {/* <div className="flex justify-center gap-4 mt-6">
                       <div className="bg-emerald-500 text-white px-6 py-4 rounded-lg shadow-lg text-center">
                         <div className="text-3xl font-bold">{totalVotes}</div>
                         <div className="text-sm">Votos</div>
@@ -507,7 +555,7 @@ export default function Relatorios() {
                       </div>
 
 
-                    </div>
+                    </div> */}
 
                     <p className="text-xs text-gray-400 text-center mt-4">* Todos os horários</p>
                   </CardContent>
@@ -697,12 +745,12 @@ export default function Relatorios() {
                               </div>
                               <div className="bg-yellow-100 text-yellow-800 text-center p-3 rounded-lg shadow">
                                 <p className="text-sm font-semibold">Qtd. Refeições</p>
-                                <p className="text-xl font-bold">{data.serviceInfo?.qtd_ref || 0}</p>
+                                <p className="text-xl font-bold">{(data.serviceInfo?.qtd_ref || 0) * diasSelecionados}</p>
                               </div>
                               <div className="bg-red-100 text-red-800 text-center p-3 rounded-lg shadow">
                                 <p className="text-sm font-semibold">Diferença</p>
                                 <p className="text-xl font-bold">
-                                  {(data.serviceInfo?.qtd_ref || 0) - data.total}
+                                  {((data.serviceInfo?.qtd_ref || 0) * diasSelecionados) - data.total}
                                 </p>
                               </div>
                             </div>
@@ -714,7 +762,7 @@ export default function Relatorios() {
 
 
                 {/* Pontos de Atenção */}
-                <Card className="border-2">
+                {/* <Card className="border-2">
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2">
                       <span className="text-2xl">⚠️</span>
@@ -775,7 +823,7 @@ export default function Relatorios() {
                         })}
                     </div>
                   </CardContent>
-                </Card>
+                </Card> */}
 
 
 
@@ -796,6 +844,7 @@ export default function Relatorios() {
                             <th className="px-4 py-2 text-center">😊 Ótimo</th>
                             <th className="px-4 py-2 text-center">🙂 Bom</th>
                             <th className="px-4 py-2 text-center">😐 Regular</th>
+                            <th className="px-4 py-2 text-center">😞 Ruim</th>
                             <th className="px-4 py-2 text-center font-bold">Total</th>
                           </tr>
                         </thead>
@@ -803,20 +852,22 @@ export default function Relatorios() {
                           {votosPorDia.map((day, index) => (
                             <tr key={index} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
                               <td className="px-4 py-2 whitespace-nowrap">
-                                {format(new Date(day.data), 'dd/MM/yyyy')}
+
+                                {format(parseISO(day.data), 'dd/MM/yyyy')}
                               </td>
                               <td className="px-4 py-2 whitespace-nowrap">
                                 {companiesList?.find(c => c.id === selectedCompany)?.nome || 'Empresa'}
                               </td>
                               <td className="px-4 py-2 text-center">
-                                {day.otimo || 0}
+                                {day.Ótimo || 0}
                               </td>
                               <td className="px-4 py-2 text-center">
-                                {day.bom || 0}
+                                {day.Bom || 0}
                               </td>
                               <td className="px-4 py-2 text-center">
-                                {day.regular || 0}
+                                {day.Regular || 0}
                               </td>
+                              <td className="px-4 py-2 text-center">{day.Ruim || 0}</td>
                               <td className="px-4 py-2 text-center font-bold">
                                 {day.total || 0}
                               </td>

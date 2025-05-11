@@ -263,6 +263,33 @@ export const votes = {
       throw error;
     }
   },
+  getAnalyticsRelatorio: async (companyId: string, filters?: {
+    startDate?: string;
+    endDate?: string;
+  }): Promise<VoteAnalytics> => {
+    try {
+      const params = new URLSearchParams();
+      if (filters?.startDate) params.append('startDate', filters.startDate);
+      if (filters?.endDate) params.append('endDate', filters.endDate);
+
+      const response = await api.get(`/votes/analytics_relatorio/${companyId}?${params.toString()}`);
+
+      if (!response.data) {
+        throw new Error('Nenhum dado retornado da API');
+      }
+
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching analytics_relatorio:', error);
+      if (axios.isAxiosError(error)) {
+        if (error.response?.status === 401) {
+          throw new Error('Não autorizado. Por favor, faça login novamente.');
+        }
+        throw new Error(error.response?.data?.message || 'Falha ao buscar análises de relatório');
+      }
+      throw error;
+    }
+  },
   getByCompany: async (id_empresa: string): Promise<Vote[]> => {
     try {
       const response = await api.get(`/votes/empresa/${id_empresa}`);

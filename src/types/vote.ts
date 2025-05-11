@@ -52,9 +52,10 @@ export interface VoteAnalytics {
   votesByDay: {
     data: string;
     empresa: string;
-    otimo: number;
-    bom: number;
-    regular: number;
+    Ótimo: number;
+    Bom: number;
+    Regular: number;
+    Ruim: number;
     total: number;
   }[];
 }

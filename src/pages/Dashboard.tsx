@@ -179,9 +179,9 @@ const Dashboard: React.FC = () => {
     fetchData();
 
     // Poll for updates every 30 seconds
-    const intervalId = setInterval(fetchData, 30000);
+    // const intervalId = setInterval(fetchData, 30000);
 
-    return () => clearInterval(intervalId);
+    // return () => clearInterval(intervalId);
   }, []);
 
   if (loading) {
