@@ -950,6 +950,47 @@ export default function Relatorios() {
                     })()}
                   </CardContent>
                 </Card>
+
+
+
+                <Card className="border-2">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <span className="text-2xl">📅</span>
+                      Relatório de Respostas Negativas
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="overflow-x-auto">
+                      <table className="min-w-full text-sm text-gray-700">
+                        <thead className="bg-gray-100">
+                          <tr>
+                            <th className="px-4 py-2 text-left">Data</th>
+                            <th className="px-4 py-2 text-left">Empresa</th>
+                            <th className="px-4 py-2 text-center">Voto</th>
+                            <th className="px-4 py-2 text-center">Serviço</th>
+                            <th className="px-4 py-2 text-center">Comentário</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {analytics?.votosNegativos?.map((voto, index) => (
+                            <tr key={index} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+                              <td className="px-4 py-2 whitespace-nowrap">{format(parseISO(voto.momento_voto), 'dd/MM/yyyy')}</td>
+                              <td className="px-4 py-2">{empresaSelecionada?.nome || 'Empresa'}</td>
+                              <td className="px-4 py-2 text-center">
+                                {voto.avaliacao === 'Regular' ? '😐' : '😞'} {voto.avaliacao}
+                              </td>
+                              <td className="px-4 py-2 text-center">{voto.tipo_servico?.nome || '-'}</td>
+
+
+                              <td className="px-4 py-2 text-center">{voto.comentario || '-'}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </CardContent>
+                </Card>
               </div>
             </div>
           )}
