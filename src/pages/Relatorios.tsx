@@ -156,6 +156,8 @@ export default function Relatorios() {
   const totalVotes = analytics?.totalVotes || 0;
 
 
+
+
   const satisfacaoServicoData = analytics ? Object.entries(analytics.votesByService)
     .map(([id, data]) => ({
       name: data.serviceInfo?.nome || id,
@@ -282,7 +284,8 @@ export default function Relatorios() {
     await new Promise(resolve => setTimeout(resolve, 1000));
     setIsExporting(false);
   };
-
+  const empresaSelecionada = companiesList?.find(c => c.id === selectedCompany);
+  const deveOcultarRuim = empresaSelecionada?.qtdbutao === 3;
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <Navbar />
@@ -508,19 +511,33 @@ export default function Relatorios() {
                     <div className="overflow-x-auto">
                       <table className="min-w-full text-sm">
                         <tbody>
-                          {pontosMelhoriaData.map((entry) => (
-                            <tr key={entry.name} className="border-t">
-                              <td className="py-2 flex items-center gap-2">
-                                <span className="text-xl">{entry.name === 'Ótimo' ? '😊' : entry.name === 'Bom' ? '🙂' : '😐'}</span>
-                                {entry.name}
-                              </td>
-                              <td className="py-2 text-center w-16">{entry.value || 0}</td>
-                              <td className="py-2 w-full">
-                                <Progress value={parseFloat(getPercentage(entry.value))} className="h-2" />
-                              </td>
-                              <td className="py-2 text-center w-16">{getPercentage(entry.value)}%</td>
-                            </tr>
-                          ))}
+                          {pontosMelhoriaData
+                            .filter((entry) => {
+                              const empresaSelecionada = companiesList?.find(c => c.id === selectedCompany);
+                              // Oculta "Ruim" se a empresa tiver 3 botões
+                              if (empresaSelecionada?.qtdbutao === 3 && entry.name === 'Ruim') return false;
+                              return true;
+                            })
+                            .map((entry) => (
+                              <tr key={entry.name} className="border-t">
+                                <td className="py-2 flex items-center gap-2">
+                                  <span className="text-xl">
+                                    {{
+                                      'Ótimo': '😊',
+                                      'Bom': '😀',
+                                      'Regular': '😐',
+                                      'Ruim': '😞'
+                                    }[entry.name] || '❓'}
+                                  </span>
+                                  {entry.name}
+                                </td>
+                                <td className="py-2 text-center w-16">{entry.value || 0}</td>
+                                <td className="py-2 w-full">
+                                  <Progress value={parseFloat(getPercentage(entry.value))} className="h-2" />
+                                </td>
+                                <td className="py-2 text-center w-16">{getPercentage(entry.value)}%</td>
+                              </tr>
+                            ))}
                           <tr className="border-t font-bold">
                             <td className="py-2">Total</td>
                             <td className="py-2 text-center">{totalVotes}</td>
@@ -580,7 +597,8 @@ export default function Relatorios() {
                     <CardContent>
                       <div className="h-[400px]">
                         <ResponsiveContainer width="100%" height="100%">
-                          <RechartsBarChart data={pontosMelhoriaData}>
+                          <RechartsBarChart data={pontosMelhoriaData.filter(entry => !deveOcultarRuim || entry.name !== 'Ruim')}>
+
                             <CartesianGrid strokeDasharray="3 3" />
                             <XAxis dataKey="name" />
                             <YAxis />
@@ -594,26 +612,30 @@ export default function Relatorios() {
                               formatter={(value: number) => [`${value} votos`, '']}
                             />
                             <Bar dataKey="value" fill="#8884d8" radius={[4, 4, 0, 0]}>
-                              {pontosMelhoriaData.map((entry, index) => (
-                                <Cell key={`cell-${index}`} fill={COLORS[entry.name as keyof typeof COLORS]} />
-                              ))}
+                              {pontosMelhoriaData
+                                .filter(entry => !deveOcultarRuim || entry.name !== 'Ruim')
+                                .map((entry, index) => (
+                                  <Cell key={`cell-${index}`} fill={COLORS[entry.name as keyof typeof COLORS]} />
+                                ))}
                             </Bar>
                           </RechartsBarChart>
                         </ResponsiveContainer>
                       </div>
                       <div className="mt-4 grid grid-cols-2 gap-4">
-                        {pontosMelhoriaData.map((entry) => (
-                          <div
-                            key={entry.name}
-                            className={`flex items-center justify-between p-3 rounded-lg border ${getRatingColor(entry.name)}`}
-                          >
-                            <div className="flex items-center gap-2">
-                              <span className="text-xl">{getRatingEmoji(entry.name)}</span>
-                              <span className="font-medium">{entry.name}</span>
+                        {pontosMelhoriaData
+                          .filter(entry => !deveOcultarRuim || entry.name !== 'Ruim')
+                          .map((entry) => (
+                            <div
+                              key={entry.name}
+                              className={`flex items-center justify-between p-3 rounded-lg border ${getRatingColor(entry.name)}`}
+                            >
+                              <div className="flex items-center gap-2">
+                                <span className="text-xl">{getRatingEmoji(entry.name)}</span>
+                                <span className="font-medium">{entry.name}</span>
+                              </div>
+                              <span className="font-bold">{entry.value}</span>
                             </div>
-                            <span className="font-bold">{entry.value}</span>
-                          </div>
-                        ))}
+                          ))}
                       </div>
                     </CardContent>
                   </Card>
@@ -632,133 +654,181 @@ export default function Relatorios() {
                       </div>
                     </CardHeader>
                     <CardContent>
-                      {/* Aqui filtramos os dados só para o PieChart */}
-                      <div className="h-[400px]">
-                        <ResponsiveContainer width="100%" height="100%">
-                          <RechartsPieChart>
-                            <Pie
-                              data={resultadoDiaData.filter(entry => entry.value > 0)}
-                              cx="50%"
-                              cy="50%"
-                              labelLine={false}
-                              outerRadius={150}
-                              fill="#8884d8"
-                              dataKey="value"
-                              label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                            >
-                              {resultadoDiaData.filter(entry => entry.value > 0).map((entry, index) => (
-                                <Cell key={`cell-${index}`} fill={COLORS[entry.name as keyof typeof COLORS]} />
-                              ))}
-                            </Pie>
-                            <Tooltip
-                              contentStyle={{
-                                backgroundColor: 'white',
-                                border: '1px solid #e5e7eb',
-                                borderRadius: '0.5rem',
-                                padding: '0.5rem'
-                              }}
-                              formatter={(value: number) => [`${value.toFixed(1)}%`, '']}
-                            />
-                            <Legend
-                              verticalAlign="bottom"
-                              height={36}
-                              formatter={(value) => (
-                                <span className="text-sm">{value}</span>
-                              )}
-                            />
-                          </RechartsPieChart>
-                        </ResponsiveContainer>
-                      </div>
+                      {(() => {
+                        const empresaSelecionada = companiesList?.find(c => c.id === selectedCompany);
+                        const deveOcultarRuim = empresaSelecionada?.qtdbutao === 3;
 
-                      {/* Aqui a lista completa, sem filtrar */}
-                      <div className="mt-4 grid grid-cols-2 gap-4">
-                        {resultadoDiaData.map((entry) => (
-                          <div
-                            key={entry.name}
-                            className={`flex items-center justify-between p-3 rounded-lg border ${getRatingColor(entry.name)}`}
-                          >
-                            <div className="flex items-center gap-2">
-                              <span className="text-xl">{getRatingEmoji(entry.name)}</span>
-                              <span className="font-medium">{entry.name}</span>
+                        const avaliacoesBase = ['Ótimo', 'Bom', 'Regular', 'Ruim'];
+                        const completado = avaliacoesBase.map((label) => {
+                          const original = resultadoDiaData.find((e) => e.name === label);
+                          return {
+                            name: label,
+                            value: original?.value ?? 0,
+                            color: COLORS[label as keyof typeof COLORS],
+                          };
+                        });
+
+                        const graficoData = completado
+                          .filter((entry) => (!deveOcultarRuim || entry.name !== 'Ruim') && entry.value > 0);
+
+                        const cartoesData = completado
+                          .filter((entry) => !deveOcultarRuim || entry.name !== 'Ruim');
+
+                        return (
+                          <>
+                            {/* Gráfico Pizza */}
+                            <div className="h-[400px]">
+                              <ResponsiveContainer width="100%" height="100%">
+                                <RechartsPieChart>
+                                  <Pie
+                                    data={graficoData}
+                                    cx="50%"
+                                    cy="50%"
+                                    labelLine={false}
+                                    outerRadius={150}
+                                    fill="#8884d8"
+                                    dataKey="value"
+                                    label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                                  >
+                                    {graficoData.map((entry, index) => (
+                                      <Cell
+                                        key={`cell-${index}`}
+                                        fill={COLORS[entry.name as keyof typeof COLORS]}
+                                      />
+                                    ))}
+                                  </Pie>
+                                  <Tooltip
+                                    contentStyle={{
+                                      backgroundColor: 'white',
+                                      border: '1px solid #e5e7eb',
+                                      borderRadius: '0.5rem',
+                                      padding: '0.5rem',
+                                    }}
+                                    formatter={(value: number) => [`${value.toFixed(1)}%`, '']}
+                                  />
+                                  <Legend
+                                    verticalAlign="bottom"
+                                    height={36}
+                                    formatter={(value) => <span className="text-sm">{value}</span>}
+                                  />
+                                </RechartsPieChart>
+                              </ResponsiveContainer>
                             </div>
-                            <span className="font-bold">{entry.value.toFixed(1)}%</span>
-                          </div>
-                        ))}
-                      </div>
+
+                            {/* Cartões com % por avaliação */}
+                            <div className="mt-4 grid grid-cols-2 gap-4">
+                              {cartoesData.map((entry) => (
+                                <div
+                                  key={entry.name}
+                                  className={`flex items-center justify-between p-3 rounded-lg border ${getRatingColor(entry.name)}`}
+                                >
+                                  <div className="flex items-center gap-2">
+                                    <span className="text-xl">{getRatingEmoji(entry.name)}</span>
+                                    <span className="font-medium">{entry.name}</span>
+                                  </div>
+                                  <span className="font-bold">{entry.value.toFixed(1)}%</span>
+                                </div>
+                              ))}
+                            </div>
+                          </>
+                        );
+                      })()}
                     </CardContent>
                   </Card>
+
+
                 </div>
 
                 {/* Análise por Serviço */}
                 <CardContent>
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {Object.entries(analytics.votesByService)
-                      .filter(([_, data]) => data.serviceInfo)
-                      .map(([_, data]) => {
-                        const satisfactionPercent = data.percentuais.Ótimo + data.percentuais.Bom;
-                        return (
-                          <div key={data.serviceInfo?.nome} className="border rounded-lg p-4 hover:shadow-lg transition-shadow">
-                            <div className="flex items-center justify-between mb-4">
-                              <div>
-                                <h3 className="text-lg font-semibold flex items-center gap-2">
-                                  <span className="text-2xl">{getServiceEmoji(data.serviceInfo?.nome || '')}</span>
-                                  {data.serviceInfo?.nome}
-                                </h3>
-                                <p className="text-sm text-muted-foreground">
-                                  {data.serviceInfo?.hora_inicio} - {data.serviceInfo?.hora_final}
-                                </p>
-                              </div>
-                              <div className={`px-3 py-1 rounded-full text-sm font-medium ${satisfactionPercent >= 80 ? 'bg-green-100 text-green-800' :
-                                satisfactionPercent >= 60 ? 'bg-blue-100 text-blue-800' :
-                                  satisfactionPercent >= 40 ? 'bg-yellow-100 text-yellow-800' :
-                                    'bg-red-100 text-red-800'
-                                }`}>
-                                {satisfactionPercent.toFixed(1)}%
-                              </div>
-                            </div>
+                    {(() => {
+                      const empresaSelecionada = companiesList?.find(c => c.id === selectedCompany);
+                      const deveOcultarRuim = empresaSelecionada?.qtdbutao === 3;
 
-                            <div className="space-y-2">
-                              {Object.entries(data.avaliacoes).map(([rating, count]) => (
-                                <div
-                                  key={rating}
-                                  className={`flex items-center justify-between p-2 rounded-lg ${getRatingColor(rating)}`}
-                                >
-                                  <div className="flex items-center gap-2">
-                                    <span className="text-xl">{getRatingEmoji(rating)}</span>
-                                    <span className="font-medium">{rating}</span>
-                                  </div>
-                                  <div className="flex items-center gap-2">
-                                    <span className="font-bold">{count}</span>
-                                    <span className="text-sm text-muted-foreground">
-                                      ({data.percentuais[rating as keyof typeof data.percentuais].toFixed(1)}%)
-                                    </span>
-                                  </div>
+                      return Object.entries(analytics.votesByService)
+                        .filter(([_, data]) => data.serviceInfo)
+                        .map(([_, data]) => {
+                          const satisfactionPercent = data.percentuais.Ótimo + data.percentuais.Bom;
+
+                          const avaliacoesBase = ['Ótimo', 'Bom', 'Regular', 'Ruim'];
+                          const avaliacaoCompletada = avaliacoesBase
+                            .filter((label) => !deveOcultarRuim || label !== 'Ruim')
+                            .map((label) => ({
+                              label,
+                              count: data.avaliacoes[label as keyof typeof data.avaliacoes] ?? 0,
+                              percent: data.percentuais[label as keyof typeof data.percentuais] ?? 0,
+                            }));
+
+                          return (
+                            <div key={data.serviceInfo?.nome} className="border rounded-lg p-4 hover:shadow-lg transition-shadow">
+                              <div className="flex items-center justify-between mb-4">
+                                <div>
+                                  <h3 className="text-lg font-semibold flex items-center gap-2">
+                                    <span className="text-2xl">{getServiceEmoji(data.serviceInfo?.nome || '')}</span>
+                                    {data.serviceInfo?.nome}
+                                  </h3>
+                                  <p className="text-sm text-muted-foreground">
+                                    {data.serviceInfo?.hora_inicio} - {data.serviceInfo?.hora_final}
+                                  </p>
                                 </div>
-                              ))}
-                            </div>
+                                <div className={`px-3 py-1 rounded-full text-sm font-medium ${satisfactionPercent >= 80
+                                  ? 'bg-green-100 text-green-800'
+                                  : satisfactionPercent >= 60
+                                    ? 'bg-blue-100 text-blue-800'
+                                    : satisfactionPercent >= 40
+                                      ? 'bg-yellow-100 text-yellow-800'
+                                      : 'bg-red-100 text-red-800'
+                                  }`}>
+                                  {satisfactionPercent.toFixed(1)}%
+                                </div>
+                              </div>
 
-                            {/* Blocos adicionais */}
-                            <div className="grid grid-cols-3 gap-2 mt-4">
-                              <div className="bg-green-100 text-green-800 text-center p-3 rounded-lg shadow">
-                                <p className="text-sm font-semibold">Qtd. de Votos</p>
-                                <p className="text-xl font-bold">{data.total}</p>
+                              <div className="space-y-2">
+                                {avaliacaoCompletada.map(({ label, count, percent }) => (
+                                  <div
+                                    key={label}
+                                    className={`flex items-center justify-between p-2 rounded-lg ${getRatingColor(label)}`}
+                                  >
+                                    <div className="flex items-center gap-2">
+                                      <span className="text-xl">{getRatingEmoji(label)}</span>
+                                      <span className="font-medium">{label}</span>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                      <span className="font-bold">{count}</span>
+                                      <span className="text-sm text-muted-foreground">
+                                        ({percent.toFixed(1)}%)
+                                      </span>
+                                    </div>
+                                  </div>
+                                ))}
                               </div>
-                              <div className="bg-yellow-100 text-yellow-800 text-center p-3 rounded-lg shadow">
-                                <p className="text-sm font-semibold">Qtd. Refeições</p>
-                                <p className="text-xl font-bold">{(data.serviceInfo?.qtd_ref || 0) * diasSelecionados}</p>
-                              </div>
-                              <div className="bg-red-100 text-red-800 text-center p-3 rounded-lg shadow">
-                                <p className="text-sm font-semibold">Diferença</p>
-                                <p className="text-xl font-bold">
-                                  {((data.serviceInfo?.qtd_ref || 0) * diasSelecionados) - data.total}
-                                </p>
+
+                              {/* Blocos adicionais */}
+                              <div className="grid grid-cols-3 gap-2 mt-4">
+                                <div className="bg-green-100 text-green-800 text-center p-3 rounded-lg shadow">
+                                  <p className="text-sm font-semibold">Qtd. de Votos</p>
+                                  <p className="text-xl font-bold">{data.total}</p>
+                                </div>
+                                <div className="bg-yellow-100 text-yellow-800 text-center p-3 rounded-lg shadow">
+                                  <p className="text-sm font-semibold">Qtd. Refeições</p>
+                                  <p className="text-xl font-bold">{(data.serviceInfo?.qtd_ref || 0) * diasSelecionados}</p>
+                                </div>
+                                <div className="bg-red-100 text-red-800 text-center p-3 rounded-lg shadow">
+                                  <p className="text-sm font-semibold">Diferença</p>
+                                  <p className="text-xl font-bold">
+                                    {((data.serviceInfo?.qtd_ref || 0) * diasSelecionados) - data.total}
+                                  </p>
+                                </div>
                               </div>
                             </div>
-                          </div>
-                        );
-                      })}
+                          );
+                        });
+                    })()}
                   </div>
                 </CardContent>
+
+
 
 
                 {/* Pontos de Atenção */}
@@ -835,47 +905,49 @@ export default function Relatorios() {
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <div className="overflow-x-auto">
-                      <table className="min-w-full text-sm text-gray-700">
-                        <thead className="bg-gray-100">
-                          <tr>
-                            <th className="px-4 py-2 text-left">Data</th>
-                            <th className="px-4 py-2 text-left">Empresa</th>
-                            <th className="px-4 py-2 text-center">😊 Ótimo</th>
-                            <th className="px-4 py-2 text-center">🙂 Bom</th>
-                            <th className="px-4 py-2 text-center">😐 Regular</th>
-                            <th className="px-4 py-2 text-center">😞 Ruim</th>
-                            <th className="px-4 py-2 text-center font-bold">Total</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {votosPorDia.map((day, index) => (
-                            <tr key={index} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
-                              <td className="px-4 py-2 whitespace-nowrap">
+                    {(() => {
+                      const empresaSelecionada = companiesList?.find(c => c.id === selectedCompany);
+                      const deveOcultarRuim = empresaSelecionada?.qtdbutao === 3;
 
-                                {format(parseISO(day.data), 'dd/MM/yyyy')}
-                              </td>
-                              <td className="px-4 py-2 whitespace-nowrap">
-                                {companiesList?.find(c => c.id === selectedCompany)?.nome || 'Empresa'}
-                              </td>
-                              <td className="px-4 py-2 text-center">
-                                {day.Ótimo || 0}
-                              </td>
-                              <td className="px-4 py-2 text-center">
-                                {day.Bom || 0}
-                              </td>
-                              <td className="px-4 py-2 text-center">
-                                {day.Regular || 0}
-                              </td>
-                              <td className="px-4 py-2 text-center">{day.Ruim || 0}</td>
-                              <td className="px-4 py-2 text-center font-bold">
-                                {day.total || 0}
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
+                      return (
+                        <div className="overflow-x-auto">
+                          <table className="min-w-full text-sm text-gray-700">
+                            <thead className="bg-gray-100">
+                              <tr>
+                                <th className="px-4 py-2 text-left">Data</th>
+                                <th className="px-4 py-2 text-left">Empresa</th>
+                                <th className="px-4 py-2 text-center">😊 Ótimo</th>
+                                <th className="px-4 py-2 text-center">🙂 Bom</th>
+                                <th className="px-4 py-2 text-center">😐 Regular</th>
+                                {!deveOcultarRuim && (
+                                  <th className="px-4 py-2 text-center">😞 Ruim</th>
+                                )}
+                                <th className="px-4 py-2 text-center font-bold">Total</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {votosPorDia.map((day, index) => (
+                                <tr key={index} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+                                  <td className="px-4 py-2 whitespace-nowrap">
+                                    {format(parseISO(day.data), 'dd/MM/yyyy')}
+                                  </td>
+                                  <td className="px-4 py-2 whitespace-nowrap">
+                                    {empresaSelecionada?.nome || 'Empresa'}
+                                  </td>
+                                  <td className="px-4 py-2 text-center">{day.Ótimo || 0}</td>
+                                  <td className="px-4 py-2 text-center">{day.Bom || 0}</td>
+                                  <td className="px-4 py-2 text-center">{day.Regular || 0}</td>
+                                  {!deveOcultarRuim && (
+                                    <td className="px-4 py-2 text-center">{day.Ruim || 0}</td>
+                                  )}
+                                  <td className="px-4 py-2 text-center font-bold">{day.total || 0}</td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      );
+                    })()}
                   </CardContent>
                 </Card>
               </div>
