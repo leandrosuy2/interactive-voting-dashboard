@@ -61,8 +61,14 @@ export default function Relatorios() {
   //   to: addDays(new Date(), 7),
   // });
   // const [quickFilter, setQuickFilter] = useState('1d');
-  const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined);
-  const [quickFilter, setQuickFilter] = useState('1d');
+  const [dateRange, setDateRange] = useState<DateRange | undefined>(() => {
+    const today = new Date();
+    return {
+      from: today,
+      to: today
+    };
+  });
+  const [quickFilter, setQuickFilter] = useState('custom');
   const [selectedCompany, setSelectedCompany] = useState<string>(id || '');
   const [isExporting, setIsExporting] = useState(false);
 
