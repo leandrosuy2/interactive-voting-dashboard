@@ -873,7 +873,8 @@ const Monitor: React.FC = () => {
           </CardHeader>
           <CardContent>
             <VoteStats
-              votes={filteredVotes.filter(vote => vote.avaliacao !== 'Ruim')}
+              votes={filteredVotes}
+
               qtdbutao={companiesList?.find(c => c.id === selectedCompanyId)?.qtdbutao ?? 0}
             />
           </CardContent>
