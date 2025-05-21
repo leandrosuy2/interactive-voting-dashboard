@@ -39,18 +39,6 @@ const COLORS = {
 };
 
 
-const dadosSemana = [
-  { dia: 'Seg', semanaAnterior: 10, semanaAtual: 5 },
-  { dia: 'Ter', semanaAnterior: 63, semanaAtual: 0 },
-  { dia: 'Qua', semanaAnterior: 23, semanaAtual: 0 },
-  { dia: 'Qui', semanaAnterior: 0, semanaAtual: 0 },
-  { dia: 'Sex', semanaAnterior: 0, semanaAtual: 0 },
-  { dia: 'Sab', semanaAnterior: 0, semanaAtual: 0 },
-  { dia: 'Dom', semanaAnterior: 0, semanaAtual: 0 },
-];
-
-
-
 
 
 export default function Relatorios() {
@@ -440,7 +428,7 @@ export default function Relatorios() {
                     </div>
                   </CardHeader>
                   <CardContent>
-                    <div className="h-[500px]"> {/* aumentei um pouco a altura */}
+                    <div className="h-[300px]"> {/* aumentei um pouco a altura */}
                       <ResponsiveContainer width="100%" height="100%">
                         <BarChart data={pesquisaDiariaData}>
                           <CartesianGrid strokeDasharray="3 3" />
@@ -579,6 +567,9 @@ export default function Relatorios() {
                 </Card>
 
 
+
+
+
                 {/* Gráficos Principais */}
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                   <Card className="border-2">
@@ -595,7 +586,7 @@ export default function Relatorios() {
                       </div>
                     </CardHeader>
                     <CardContent>
-                      <div className="h-[400px]">
+                      <div className="h-[250px]">
                         <ResponsiveContainer width="100%" height="100%">
                           <RechartsBarChart data={pontosMelhoriaData.filter(entry => !deveOcultarRuim || entry.name !== 'Ruim')}>
 
@@ -677,7 +668,7 @@ export default function Relatorios() {
                         return (
                           <>
                             {/* Gráfico Pizza */}
-                            <div className="h-[400px]">
+                            <div className="h-[250px]">
                               <ResponsiveContainer width="100%" height="100%">
                                 <RechartsPieChart>
                                   <Pie
@@ -685,7 +676,7 @@ export default function Relatorios() {
                                     cx="50%"
                                     cy="50%"
                                     labelLine={false}
-                                    outerRadius={150}
+                                    outerRadius={80}
                                     fill="#8884d8"
                                     dataKey="value"
                                     label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
@@ -738,7 +729,7 @@ export default function Relatorios() {
 
 
                 </div>
-
+                <div style={{ height: 0, pageBreakBefore: 'always', breakBefore: 'always' }} className="page-break" />
                 {/* Análise por Serviço */}
                 <CardContent>
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -895,6 +886,7 @@ export default function Relatorios() {
                   </CardContent>
                 </Card> */}
 
+                <div style={{ height: 0, pageBreakBefore: 'always', breakBefore: 'always' }} className="page-break" />
 
 
                 <Card className="border-2">
@@ -926,23 +918,38 @@ export default function Relatorios() {
                               </tr>
                             </thead>
                             <tbody>
-                              {votosPorDia.map((day, index) => (
-                                <tr key={index} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
-                                  <td className="px-4 py-2 whitespace-nowrap">
-                                    {format(parseISO(day.data), 'dd/MM/yyyy')}
-                                  </td>
-                                  <td className="px-4 py-2 whitespace-nowrap">
-                                    {empresaSelecionada?.nome || 'Empresa'}
-                                  </td>
-                                  <td className="px-4 py-2 text-center">{day.Ótimo || 0}</td>
-                                  <td className="px-4 py-2 text-center">{day.Bom || 0}</td>
-                                  <td className="px-4 py-2 text-center">{day.Regular || 0}</td>
-                                  {!deveOcultarRuim && (
-                                    <td className="px-4 py-2 text-center">{day.Ruim || 0}</td>
-                                  )}
-                                  <td className="px-4 py-2 text-center font-bold">{day.total || 0}</td>
-                                </tr>
-                              ))}
+                              {votosPorDia.map((day, index) => {
+                                // Verifica se deve inserir quebra de página
+                                const isFirstBreak = index === 47;
+                                const isSubsequentBreak = index > 47 && (index - 47) % 52 === 0;
+
+                                return (
+                                  <React.Fragment key={index}>
+                                    {(isFirstBreak || isSubsequentBreak) && (
+                                      <tr className="page-break">
+                                        <td colSpan={10}></td>
+                                      </tr>
+                                    )}
+
+                                    <tr className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+                                      <td className="px-4 py-2 whitespace-nowrap">
+                                        {format(parseISO(day.data), 'dd/MM/yyyy')}
+                                      </td>
+                                      <td className="px-4 py-2 whitespace-nowrap">
+                                        {empresaSelecionada?.nome || 'Empresa'}
+                                      </td>
+                                      <td className="px-4 py-2 text-center">{day.Ótimo || 0}</td>
+                                      <td className="px-4 py-2 text-center">{day.Bom || 0}</td>
+                                      <td className="px-4 py-2 text-center">{day.Regular || 0}</td>
+                                      {!deveOcultarRuim && (
+                                        <td className="px-4 py-2 text-center">{day.Ruim || 0}</td>
+                                      )}
+                                      <td className="px-4 py-2 text-center font-bold">{day.total || 0}</td>
+                                    </tr>
+                                  </React.Fragment>
+                                );
+                              })}
+
                             </tbody>
                           </table>
                         </div>
@@ -950,6 +957,7 @@ export default function Relatorios() {
                     })()}
                   </CardContent>
                 </Card>
+                <div style={{ height: 0, pageBreakBefore: 'always', breakBefore: 'always' }} className="page-break" />
 
 
 
@@ -973,19 +981,32 @@ export default function Relatorios() {
                           </tr>
                         </thead>
                         <tbody>
-                          {analytics?.votosNegativos?.map((voto, index) => (
-                            <tr key={index} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
-                              <td className="px-4 py-2 whitespace-nowrap">{format(parseISO(voto.momento_voto), 'dd/MM/yyyy')}</td>
-                              <td className="px-4 py-2">{empresaSelecionada?.nome || 'Empresa'}</td>
-                              <td className="px-4 py-2 text-center">
-                                {voto.avaliacao === 'Regular' ? '😐' : '😞'} {voto.avaliacao}
-                              </td>
-                              <td className="px-4 py-2 text-center">{voto.tipo_servico?.nome || '-'}</td>
+                          {analytics?.votosNegativos?.map((voto, index) => {
+                            const isFirstBreak = index === 47;
+                            const isSubsequentBreak = index > 47 && (index - 47) % 52 === 0;
 
+                            return (
+                              <React.Fragment key={index}>
+                                {(isFirstBreak || isSubsequentBreak) && (
+                                  <tr className="page-break">
+                                    <td colSpan={10}></td>
+                                  </tr>
+                                )}
 
-                              <td className="px-4 py-2 text-center">{voto.comentario || '-'}</td>
-                            </tr>
-                          ))}
+                                <tr className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+                                  <td className="px-4 py-2 whitespace-nowrap">
+                                    {format(parseISO(voto.momento_voto), 'dd/MM/yyyy')}
+                                  </td>
+                                  <td className="px-4 py-2">{empresaSelecionada?.nome || 'Empresa'}</td>
+                                  <td className="px-4 py-2 text-center">
+                                    {voto.avaliacao === 'Regular' ? '😐' : '😞'} {voto.avaliacao}
+                                  </td>
+                                  <td className="px-4 py-2 text-center">{voto.tipo_servico?.nome || '-'}</td>
+                                  <td className="px-4 py-2 text-center">{voto.comentario || '-'}</td>
+                                </tr>
+                              </React.Fragment>
+                            );
+                          })}
                         </tbody>
                       </table>
                     </div>
