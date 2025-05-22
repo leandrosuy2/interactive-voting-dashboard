@@ -46,7 +46,8 @@ export function ExportPDF({ contentRef, fileName = 'relatorio.pdf', title = 'Rel
 
       const allBreaks = [0, ...breakPoints, canvas.height];
 
-      for (let i = 0; i < allBreaks.length - 1; i++) {
+      // for (let i = 0; i < allBreaks.length - 1; i++) {
+      for (let i = 0; i < allBreaks.length - 1 && i < 3; i++) {
         if (i > 0) pdf.addPage();
 
         const sliceStart = allBreaks[i];
@@ -68,7 +69,10 @@ export function ExportPDF({ contentRef, fileName = 'relatorio.pdf', title = 'Rel
 
         pdf.addImage(imgData, 'PNG', margin, yPos, pdfImgWidth, imgHeight);
         pdf.setFontSize(10);
-        pdf.text(`Página ${i + 1} de ${allBreaks.length - 1}`, pageWidth / 2, pageHeight - margin, { align: 'center' });
+        // pdf.text(`Página ${i + 1} de ${allBreaks.length - 1}`, pageWidth / 2, pageHeight - margin, { align: 'center' });
+        const totalPages = Math.min(allBreaks.length - 1, 3);
+        // ...
+        pdf.text(`Página ${i + 1} de ${totalPages}`, pageWidth / 2, pageHeight - margin, { align: 'center' });
       }
 
       pdf.save(fileName);
