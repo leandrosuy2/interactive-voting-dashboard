@@ -10,7 +10,7 @@ export function ExportPDF({ contentRef, fileName = 'relatorio.pdf', title = 'Rel
   const handleExport = async () => {
     if (!contentRef.current) return;
 
-    setLoading(true); // 👉 Ativa o loading
+    setLoading(true);
 
     try {
       const pdf = new jsPDF('p', 'mm', 'a4');
@@ -18,6 +18,7 @@ export function ExportPDF({ contentRef, fileName = 'relatorio.pdf', title = 'Rel
       const pageHeight = 297;
       const margin = 10;
 
+      // Add header
       pdf.setFontSize(24);
       pdf.text(title, pageWidth / 2, 20, { align: 'center' });
       pdf.setFontSize(16);
@@ -25,54 +26,57 @@ export function ExportPDF({ contentRef, fileName = 'relatorio.pdf', title = 'Rel
       pdf.setFontSize(12);
       pdf.text(`Gerado em: ${new Date().toLocaleDateString('pt-BR')}`, pageWidth / 2, 40, { align: 'center' });
 
-      const canvas = await html2canvas(contentRef.current, {
-        scale: 2,
-        useCORS: true,
-        backgroundColor: '#fff',
-      });
+      // Get the content to export
+      const content = contentRef.current;
 
-      const imgProps = { width: canvas.width, height: canvas.height };
-      const pdfImgWidth = pageWidth - margin * 2;
+      // Find specific sections to export
+      const sections = [
+        // Header section
+        content.querySelector('.mb-6'),
+        // Total Votes and Satisfaction Rate cards
+        content.querySelector('.grid-cols-1.md\\:grid-cols-2'),
+        // Daily Research chart
+        content.querySelector('.border-2:nth-of-type(1)'),
+        // Daily Results table
+        content.querySelector('.border-2:nth-of-type(2)'),
+        // Distribution of Ratings chart
+        content.querySelector('.border-2:nth-of-type(3)'),
+        // Daily Results by service type cards
+        content.querySelector('.grid-cols-1.md\\:grid-cols-2.lg\\:grid-cols-3')
+      ].filter(Boolean);
 
-      // Pega pontos de quebra
-      const breakDivs = contentRef.current.querySelectorAll('.page-break');
-      const breakPoints: number[] = [];
+      let currentY = 50; // Start after header
 
-      breakDivs.forEach(div => {
-        const rect = (div as HTMLElement).getBoundingClientRect();
-        const offsetTop = rect.top + window.scrollY - contentRef.current.offsetTop;
-        breakPoints.push(Math.round(offsetTop * 2));
-      });
+      for (const section of sections) {
+        if (!section) continue;
 
-      const allBreaks = [0, ...breakPoints, canvas.height];
+        const canvas = await html2canvas(section as HTMLElement, {
+          scale: 2,
+          useCORS: true,
+          backgroundColor: '#fff',
+          logging: false,
+        });
 
-      // for (let i = 0; i < allBreaks.length - 1; i++) {
-      for (let i = 0; i < allBreaks.length - 1 && i < 3; i++) {
-        if (i > 0) pdf.addPage();
+        const imgProps = { width: canvas.width, height: canvas.height };
+        const pdfImgWidth = pageWidth - margin * 2;
+        const pdfImgHeight = (canvas.height * pdfImgWidth) / canvas.width;
 
-        const sliceStart = allBreaks[i];
-        const sliceEnd = allBreaks[i + 1];
-        const sliceHeight = sliceEnd - sliceStart;
+        // Check if we need a new page
+        if (currentY + pdfImgHeight > pageHeight - margin) {
+          pdf.addPage();
+          currentY = margin;
+        }
 
-        const pageCanvas = document.createElement('canvas');
-        pageCanvas.width = canvas.width;
-        pageCanvas.height = sliceHeight;
-
-        const ctx = pageCanvas.getContext('2d');
-        if (!ctx) throw new Error('Contexto inválido');
-
-        ctx.drawImage(canvas, 0, sliceStart, canvas.width, sliceHeight, 0, 0, canvas.width, sliceHeight);
-
-        const imgData = pageCanvas.toDataURL('image/png');
-        const imgHeight = (sliceHeight * pdfImgWidth) / canvas.width;
-        const yPos = i === 0 ? margin + 50 : margin;
-
-        pdf.addImage(imgData, 'PNG', margin, yPos, pdfImgWidth, imgHeight);
+        // Add the section to the PDF
+        const imgData = canvas.toDataURL('image/png');
+        pdf.addImage(imgData, 'PNG', margin, currentY, pdfImgWidth, pdfImgHeight);
+        
+        // Add page number
         pdf.setFontSize(10);
-        // pdf.text(`Página ${i + 1} de ${allBreaks.length - 1}`, pageWidth / 2, pageHeight - margin, { align: 'center' });
-        const totalPages = Math.min(allBreaks.length - 1, 3);
-        // ...
-        pdf.text(`Página ${i + 1} de ${totalPages}`, pageWidth / 2, pageHeight - margin, { align: 'center' });
+        const pageNumber = pdf.getCurrentPageInfo().pageNumber;
+        pdf.text(`Página ${pageNumber}`, pageWidth / 2, pageHeight - margin, { align: 'center' });
+
+        currentY += pdfImgHeight + 10; // Add some spacing between sections
       }
 
       pdf.save(fileName);
@@ -80,7 +84,7 @@ export function ExportPDF({ contentRef, fileName = 'relatorio.pdf', title = 'Rel
       console.error('Erro ao exportar PDF:', error);
     }
 
-    setLoading(false); // 👉 Finaliza o loading
+    setLoading(false);
   };
 
   return (

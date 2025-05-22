@@ -185,7 +185,95 @@ const Dashboard: React.FC = () => {
   }, []);
 
   if (loading) {
-    return <div>Carregando...</div>;
+    return (
+      <div className="min-h-screen bg-background">
+        <Navbar />
+        <main className="container mx-auto px-4 pt-20 pb-10">
+          <div className="flex flex-col space-y-6 animate-fade-in">
+            {/* Header Skeleton */}
+            <div className="flex flex-col md:flex-row justify-between items-start gap-4">
+              <div className="space-y-2">
+                <Skeleton className="h-9 w-48 animate-shimmer bg-gradient-to-r from-secondary/20 via-secondary/40 to-secondary/20 bg-[length:1000px_100%]" />
+                <Skeleton className="h-5 w-72 animate-shimmer bg-gradient-to-r from-secondary/20 via-secondary/40 to-secondary/20 bg-[length:1000px_100%]" />
+              </div>
+              <Skeleton className="h-10 w-32 animate-shimmer bg-gradient-to-r from-secondary/20 via-secondary/40 to-secondary/20 bg-[length:1000px_100%]" />
+            </div>
+
+            {/* News Ticker Skeleton */}
+            <div className="w-full h-12 bg-secondary/20 rounded-lg animate-pulse-subtle relative overflow-hidden">
+              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-secondary/30 to-transparent animate-shimmer" />
+            </div>
+
+            {/* Stats Cards Skeleton */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              {[...Array(4)].map((_, index) => (
+                <Card key={index} className="glass-card relative overflow-hidden animate-float" style={{ animationDelay: `${index * 0.1}s` }}>
+                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-secondary/20 to-transparent animate-shimmer" />
+                  <div className="absolute right-4 top-4 opacity-20">
+                    <Skeleton className="h-12 w-12 rounded-full animate-glow" />
+                  </div>
+                  <CardHeader className="pb-2 relative">
+                    <Skeleton className="h-4 w-24 mb-2 animate-shimmer bg-gradient-to-r from-secondary/20 via-secondary/40 to-secondary/20 bg-[length:1000px_100%]" />
+                    <div className="flex items-end justify-between">
+                      <Skeleton className="h-10 w-24 animate-shimmer bg-gradient-to-r from-secondary/20 via-secondary/40 to-secondary/20 bg-[length:1000px_100%]" />
+                      <Skeleton className="h-4 w-20 animate-shimmer bg-gradient-to-r from-secondary/20 via-secondary/40 to-secondary/20 bg-[length:1000px_100%]" />
+                    </div>
+                  </CardHeader>
+                </Card>
+              ))}
+            </div>
+
+            {/* Analysis Card Skeleton */}
+            <Card className="glass-card animate-float" style={{ animationDelay: '0.4s' }}>
+              <CardHeader>
+                <Skeleton className="h-6 w-48 animate-shimmer bg-gradient-to-r from-secondary/20 via-secondary/40 to-secondary/20 bg-[length:1000px_100%]" />
+              </CardHeader>
+              <CardContent>
+                <div className="h-[400px] w-full bg-secondary/20 rounded-lg relative overflow-hidden">
+                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-secondary/30 to-transparent animate-shimmer" />
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Charts and Recent Votes Skeleton */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+              <div className="lg:col-span-2">
+                <Card className="glass-card animate-float" style={{ animationDelay: '0.5s' }}>
+                  <CardHeader>
+                    <Skeleton className="h-6 w-48 animate-shimmer bg-gradient-to-r from-secondary/20 via-secondary/40 to-secondary/20 bg-[length:1000px_100%]" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="h-[300px] w-full bg-secondary/20 rounded-lg relative overflow-hidden">
+                      <div className="absolute inset-0 bg-gradient-to-r from-transparent via-secondary/30 to-transparent animate-shimmer" />
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+              <div className="lg:col-span-1">
+                <Card className="glass-card h-full animate-float" style={{ animationDelay: '0.6s' }}>
+                  <CardHeader>
+                    <Skeleton className="h-6 w-48 animate-shimmer bg-gradient-to-r from-secondary/20 via-secondary/40 to-secondary/20 bg-[length:1000px_100%]" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-4">
+                      {[...Array(5)].map((_, index) => (
+                        <div key={index} className="flex items-center space-x-4 animate-float" style={{ animationDelay: `${0.7 + index * 0.1}s` }}>
+                          <Skeleton className="h-12 w-12 rounded-full animate-glow" />
+                          <div className="space-y-2 flex-1">
+                            <Skeleton className="h-4 w-3/4 animate-shimmer bg-gradient-to-r from-secondary/20 via-secondary/40 to-secondary/20 bg-[length:1000px_100%]" />
+                            <Skeleton className="h-3 w-1/2 animate-shimmer bg-gradient-to-r from-secondary/20 via-secondary/40 to-secondary/20 bg-[length:1000px_100%]" />
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            </div>
+          </div>
+        </main>
+      </div>
+    );
   }
 
   return (

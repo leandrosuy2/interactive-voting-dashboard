@@ -46,7 +46,7 @@ export interface VoteAnalytics {
       nome: string;
       hora_inicio: string;
       hora_final: string;
-      qtd_ref?: number; // adicionado aqui
+      qtd_ref?: number;
     };
   }>;
   votesByDay: {
@@ -57,6 +57,17 @@ export interface VoteAnalytics {
     Regular: number;
     Ruim: number;
     total: number;
+  }[];
+  votosNegativos?: {
+    id_voto: string;
+    id_empresa: string;
+    id_tipo_servico: string | null;
+    avaliacao: 'Regular' | 'Ruim';
+    comentario: string | null;
+    momento_voto: string;
+    tipo_servico?: {
+      nome: string;
+    };
   }[];
 }
 

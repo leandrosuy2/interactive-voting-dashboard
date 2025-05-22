@@ -5,6 +5,7 @@ import { ServiceType, CreateServiceTypeRequest, UpdateServiceTypeRequest } from 
 import { CreateUserRequest, UpdateUserRequest } from '../types/user';
 import { Permission } from '../types/permission';
 import { Service } from '../types/service';
+import { QueryClient } from '@tanstack/react-query';
 
 // Create an axios instance with base configurations
 const API_URL = import.meta.env.VITE_API_URL || 'https://api.vvrefeicoes.com.br';
@@ -45,6 +46,18 @@ api.interceptors.response.use(
     return Promise.reject(error);
   }
 );
+
+// Create a query client with default options
+export const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 5 * 60 * 1000, // Data is considered fresh for 5 minutes
+      gcTime: 30 * 60 * 1000, // Cache is kept for 30 minutes (garbage collection time)
+      retry: 1, // Only retry failed requests once
+      refetchOnWindowFocus: false, // Don't refetch when window regains focus
+    },
+  },
+});
 
 // Authentication APIs
 export const auth = {
@@ -149,6 +162,14 @@ export const companies = {
   },
 
   getById: async (id: string): Promise<Company> => {
+    // Use the cached companies data if available
+    const cachedCompanies = queryClient.getQueryData<Company[]>(['companies']);
+    if (cachedCompanies) {
+      const company = cachedCompanies.find(c => c.id === id);
+      if (company) return company;
+    }
+    
+    // Fallback to API request if not in cache
     const response = await api.get(`/companies/${id}`);
     return response.data;
   },
@@ -211,20 +232,27 @@ export const votes = {
   },
   getAll: async (): Promise<Vote[]> => {
     try {
-      const response = await api.get('/votes');
-      const votes = response.data;
-
-      // Busca os dados das empresas para cada voto
-      const votesWithCompany = await Promise.all(
-        votes.map(async (vote: Vote) => {
-          try {
-            const company = await companies.getById(vote.id_empresa);
-            return { ...vote, company };
-          } catch (error) {
-            return vote;
-          }
+      // Fetch votes and companies in parallel
+      const [votesResponse, allCompanies] = await Promise.all([
+        api.get('/votes'),
+        companies.getAll().catch(error => {
+          console.error('Erro ao carregar empresas:', error);
+          return [] as Company[];
         })
+      ]);
+      
+      const votes = votesResponse.data;
+      
+      // Create a map of companies for quick lookup
+      const companiesMap = new Map<string, Company>(
+        allCompanies.map(company => [company.id, company] as [string, Company])
       );
+      
+      // Map votes with company data using the lookup map
+      const votesWithCompany = votes.map((vote: Vote) => ({
+        ...vote,
+        company: companiesMap.get(vote.id_empresa)
+      }));
 
       return votesWithCompany;
     } catch (error) {

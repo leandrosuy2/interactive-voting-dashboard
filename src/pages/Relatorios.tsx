@@ -11,6 +11,7 @@ import { votes, companies } from '@/services/api';
 import { VoteAnalytics } from '@/types/vote';
 import Navbar from '@/components/Navbar';
 import { ExportPDF } from '@/components/export-pdf';
+import { ExportDetailedReport } from '@/components/export-detailed-report';
 import { Progress } from "@/components/ui/progress";
 import { parseISO } from 'date-fns';
 
@@ -256,6 +257,31 @@ export default function Relatorios() {
   };
   const empresaSelecionada = companiesList?.find(c => c.id === selectedCompany);
   const deveOcultarRuim = empresaSelecionada?.qtdbutao === 3;
+
+  const getDetailedReportData = () => {
+    if (!analytics || !companiesList) return { dailyData: [], negativeResponses: [] };
+
+    const dailyData = votosPorDia.map(day => ({
+      data: format(parseISO(day.data), 'dd/MM/yyyy'),
+      empresa: companiesList.find(c => c.id === selectedCompany)?.nome || 'Empresa',
+      otimo: day.Ótimo || 0,
+      bom: day.Bom || 0,
+      regular: day.Regular || 0,
+      ruim: day.Ruim || 0,
+      total: day.total || 0
+    }));
+
+    const negativeResponses = analytics.votosNegativos?.map(voto => ({
+      data: format(parseISO(voto.momento_voto), 'dd/MM/yyyy'),
+      empresa: companiesList.find(c => c.id === selectedCompany)?.nome || 'Empresa',
+      voto: `${voto.avaliacao === 'Regular' ? '😐' : '😞'} ${voto.avaliacao}`,
+      servico: voto.tipo_servico?.nome || '-',
+      comentario: voto.comentario || '-'
+    })) || [];
+
+    return { dailyData, negativeResponses };
+  };
+
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <Navbar />
@@ -298,12 +324,21 @@ export default function Relatorios() {
                 date={dateRange}
                 onDateChange={handleDateChange}
               />
-              <ExportPDF
-                contentRef={contentRef}
-                fileName={getFileName()}
-                title={`Relatório de Satisfação - ${companiesList?.find(c => c.id === selectedCompany)?.nome || 'Geral'}`}
-                subtitle={`Período: ${getPeriodText()}`}
-              />
+              <div className="flex gap-2">
+                <ExportPDF
+                  contentRef={contentRef}
+                  fileName={getFileName()}
+                  title={`Relatório de Satisfação - ${companiesList?.find(c => c.id === selectedCompany)?.nome || 'Geral'}`}
+                  subtitle={`Período: ${getPeriodText()}`}
+                />
+                {analytics && (
+                  <ExportDetailedReport
+                    {...getDetailedReportData()}
+                    fileName={`relatorio-detalhado-${format(new Date(), 'dd-MM-yyyy')}.pdf`}
+                    companyName={companiesList?.find(c => c.id === selectedCompany)?.nome || 'Empresa'}
+                  />
+                )}
+              </div>
             </div>
           </div>
 
