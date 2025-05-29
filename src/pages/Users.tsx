@@ -554,10 +554,9 @@ export default function Users() {
                             <FormLabel>Telefone Celular</FormLabel>
                             <FormControl>
                               <InputMask
-                                key={field.name + (field.value || '')}
                                 mask="(99) 99999-9999"
                                 value={field.value || ''}
-                                onChange={field.onChange}
+                                onChange={(e: React.ChangeEvent<HTMLInputElement>) => field.onChange(e.target.value)}
                               >
                                 {(inputProps: any) => <Input {...inputProps} />}
                               </InputMask>
@@ -788,7 +787,7 @@ export default function Users() {
                               <InputMask
                                 mask="(99) 99999-9999"
                                 value={field.value || ''}
-                                onChange={field.onChange}
+                                onChange={(e: React.ChangeEvent<HTMLInputElement>) => field.onChange(e.target.value)}
                               >
                                 {(inputProps: any) => <Input {...inputProps} />}
                               </InputMask>
